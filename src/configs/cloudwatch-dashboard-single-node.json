@@ -18,7 +18,7 @@
                 },
                 "region": "us-east-2",
                 "metrics": [
-                    [ "AWS/EC2", "CPUUtilization", "InstanceId", "i-03e0116199ae185c4", { "label": "i-03e0116199ae185c4 (sol-test7-i4i8xlarge-instance-store)" } ]
+                    [ "AWS/EC2", "CPUUtilization", "InstanceId", "i-02c976b0c2c79b726", { "label": "i-02c976b0c2c79b726 (solana-node1)" } ]
                 ],
                 "title": "CPU utilization (%)"
             }
@@ -41,7 +41,7 @@
                 },
                 "region": "us-east-2",
                 "metrics": [
-                    [ "AWS/EC2", "NetworkIn", "InstanceId", "i-03e0116199ae185c4", { "label": "i-03e0116199ae185c4 (sol-test12-i4i16xlarge-instance-store)" } ]
+                    [ "AWS/EC2", "NetworkIn", "InstanceId", "i-02c976b0c2c79b726", { "label": "i-02c976b0c2c79b726 (solana-node-1)" } ]
                 ],
                 "title": "Network in (bytes)"
             }
@@ -64,7 +64,7 @@
                 },
                 "region": "us-east-2",
                 "metrics": [
-                    [ "AWS/EC2", "NetworkOut", "InstanceId", "i-03e0116199ae185c4", { "label": "i-03e0116199ae185c4 (sol-test12-i4i16xlarge-instance-store)" } ]
+                    [ "AWS/EC2", "NetworkOut", "InstanceId", "i-02c976b0c2c79b726", { "label": "i-02c976b0c2c79b726 (solana-node-1)" } ]
                 ],
                 "title": "Network out (bytes)"
             }
@@ -82,7 +82,7 @@
                 "stat": "Average",
                 "period": 300,
                 "metrics": [
-                    [ "CWAgent", "mem_used_percent", "InstanceId", "i-03e0116199ae185c4", { "label": "i-03e0116199ae185c4 (sol-test12-i4i16xlarge-instance-store)" } ]
+                    [ "CWAgent", "mem_used_percent", "InstanceId", "i-02c976b0c2c79b726", { "label": "i-02c976b0c2c79b726 (solana-node-1)" } ]
                 ],
                 "title": "Mem Used (%)"
             }
@@ -100,7 +100,7 @@
                 "stat": "Average",
                 "period": 300,
                 "metrics": [
-                    [ "CWAgent", "cpu_usage_iowait", "InstanceId", "i-03e0116199ae185c4", { "label": "i-03e0116199ae185c4 (sol-test12-i4i16xlarge-instance-store)" } ]
+                    [ "CWAgent", "cpu_usage_iowait", "InstanceId", "i-02c976b0c2c79b726", { "label": "i-02c976b0c2c79b726 (solana-node-1)" } ]
                 ],
                 "title": "CPU Usage IO wait"
             }
@@ -113,8 +113,8 @@
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ { "expression": "m7/PERIOD(m7)", "label": "i-03e0116199ae185c4 (sol-test12-i4i16xlarge-instance-store)", "id": "e7" } ],
-                    [ "CWAgent", "diskio_reads", "InstanceId", "i-03e0116199ae185c4", "name", "nvme1n1", { "id": "m7", "visible": false, "stat": "Sum", "period": 60 } ]
+                    [ { "expression": "m7/PERIOD(m7)", "label": "i-02c976b0c2c79b726 (solana-node-1)", "id": "e7" } ],
+                    [ "CWAgent", "diskio_reads", "InstanceId", "i-02c976b0c2c79b726", "name", "nvme1n1", { "id": "m7", "visible": false, "stat": "Sum", "period": 60 } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -132,8 +132,8 @@
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ { "expression": "m7/PERIOD(m7)", "label": "i-03e0116199ae185c4 (sol-test12-i4i16xlarge-instance-store)", "id": "e7" } ],
-                    [ "CWAgent", "diskio_writes", "InstanceId", "i-03e0116199ae185c4", "name", "nvme1n1", { "id": "m7", "visible": false, "stat": "Sum", "period": 60 } ]
+                    [ { "expression": "m7/PERIOD(m7)", "label": "i-02c976b0c2c79b726 (solana-node-1)", "id": "e7" } ],
+                    [ "CWAgent", "diskio_writes", "InstanceId", "i-02c976b0c2c79b726", "name", "nvme1n1", { "id": "m7", "visible": false, "stat": "Sum", "period": 60 } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -151,8 +151,8 @@
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ { "expression": "m7/PERIOD(m7)", "label": "i-03e0116199ae185c4 (sol-test12-i4i16xlarge-instance-store)", "id": "e7" } ],
-                    [ "CWAgent", "diskio_writes", "InstanceId", "i-03e0116199ae185c4", "name", "nvme2n1", { "id": "m7", "visible": false, "stat": "Sum", "period": 60 } ]
+                    [ { "expression": "m7/PERIOD(m7)", "label": "i-02c976b0c2c79b726 (solana-node-1)", "id": "e7" } ],
+                    [ "CWAgent", "diskio_writes", "InstanceId", "i-02c976b0c2c79b726", "name", "nvme2n1", { "id": "m7", "visible": false, "stat": "Sum", "period": 60 } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -170,8 +170,8 @@
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ { "expression": "m7/PERIOD(m7)", "label": "i-03e0116199ae185c4 (sol-test12-i4i16xlarge-instance-store)", "id": "e7" } ],
-                    [ "CWAgent", "diskio_reads", "InstanceId", "i-03e0116199ae185c4", "name", "nvme2n1", { "id": "m7", "visible": false, "stat": "Sum", "period": 60 } ]
+                    [ { "expression": "m7/PERIOD(m7)", "label": "i-02c976b0c2c79b726 (solana-node-1)", "id": "e7" } ],
+                    [ "CWAgent", "diskio_reads", "InstanceId", "i-02c976b0c2c79b726", "name", "nvme2n1", { "id": "m7", "visible": false, "stat": "Sum", "period": 60 } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -189,7 +189,7 @@
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ "CWAgent", "solana_block_height", "InstanceId", "i-03e0116199ae185c4", { "label": "i-03e0116199ae185c4 (sol-test12-i4i16xlarge-instance-store)" } ]
+                    [ "CWAgent", "solana_block_height", "InstanceId", "i-02c976b0c2c79b726", { "label": "i-02c976b0c2c79b726 (solana-node-1)" } ]
                 ],
                 "sparkline": true,
                 "view": "timeSeries",
@@ -214,7 +214,7 @@
                 "stat": "Maximum",
                 "period": 60,
                 "metrics": [
-                    [ "CWAgent", "solana_slots_behind", "InstanceId", "i-03e0116199ae185c4", { "label": "i-03e0116199ae185c4 (sol-test12-i4i16xlarge-instance-store)" } ]
+                    [ "CWAgent", "solana_slots_behind", "InstanceId", "i-02c976b0c2c79b726", { "label": "i-02c976b0c2c79b726 (solana-node-1)" } ]
                 ],
                 "title": "Solana Slots Behind"
             }
@@ -227,8 +227,8 @@
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ { "expression": "m7/PERIOD(m7)", "label": "i-03e0116199ae185c4 (sol-test12-i4i16xlarge-instance-store)", "id": "e7" } ],
-                    [ "CWAgent", "diskio_read_bytes", "InstanceId", "i-03e0116199ae185c4", "name", "nvme1n1", { "id": "m7", "visible": false, "stat": "Sum", "period": 60 } ]
+                    [ { "expression": "m7/PERIOD(m7)", "label": "i-02c976b0c2c79b726 (solana-node-1)", "id": "e7" } ],
+                    [ "CWAgent", "diskio_read_bytes", "InstanceId", "i-02c976b0c2c79b726", "name", "nvme1n1", { "id": "m7", "visible": false, "stat": "Sum", "period": 60 } ]
                 ],
                 "sparkline": true,
                 "view": "timeSeries",
@@ -247,8 +247,8 @@
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ { "expression": "m7/PERIOD(m7)", "label": "i-03e0116199ae185c4 (sol-test12-i4i16xlarge-instance-store)", "id": "e7" } ],
-                    [ "CWAgent", "diskio_write_bytes", "InstanceId", "i-03e0116199ae185c4", "name", "nvme1n1", { "id": "m7", "visible": false, "stat": "Sum", "period": 60 } ]
+                    [ { "expression": "m7/PERIOD(m7)", "label": "i-02c976b0c2c79b726 (solana-node-1)", "id": "e7" } ],
+                    [ "CWAgent", "diskio_write_bytes", "InstanceId", "i-02c976b0c2c79b726", "name", "nvme1n1", { "id": "m7", "visible": false, "stat": "Sum", "period": 60 } ]
                 ],
                 "sparkline": true,
                 "view": "timeSeries",
@@ -267,8 +267,8 @@
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ { "expression": "m7/PERIOD(m7)", "label": "i-03e0116199ae185c4 (sol-test12-i4i16xlarge-instance-store)", "id": "e7" } ],
-                    [ "CWAgent", "diskio_read_bytes", "InstanceId", "i-03e0116199ae185c4", "name", "nvme2n1", { "id": "m7", "visible": false, "stat": "Sum", "period": 60 } ]
+                    [ { "expression": "m7/PERIOD(m7)", "label": "i-02c976b0c2c79b726 (solana-node-1)", "id": "e7" } ],
+                    [ "CWAgent", "diskio_read_bytes", "InstanceId", "i-02c976b0c2c79b726", "name", "nvme2n1", { "id": "m7", "visible": false, "stat": "Sum", "period": 60 } ]
                 ],
                 "sparkline": true,
                 "view": "timeSeries",
@@ -287,8 +287,8 @@
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ { "expression": "m7/PERIOD(m7)", "label": "i-03e0116199ae185c4 (sol-test12-i4i16xlarge-instance-store)", "id": "e7" } ],
-                    [ "CWAgent", "diskio_write_bytes", "InstanceId", "i-03e0116199ae185c4", "name", "nvme2n1", { "id": "m7", "visible": false, "stat": "Sum", "period": 60 } ]
+                    [ { "expression": "m7/PERIOD(m7)", "label": "i-02c976b0c2c79b726 (solana-node-1)", "id": "e7" } ],
+                    [ "CWAgent", "diskio_write_bytes", "InstanceId", "i-02c976b0c2c79b726", "name", "nvme2n1", { "id": "m7", "visible": false, "stat": "Sum", "period": 60 } ]
                 ],
                 "sparkline": true,
                 "view": "timeSeries",
@@ -318,9 +318,9 @@
                 },
                 "region": "us-east-2",
                 "metrics": [
-                    [ { "expression": "IF(m7_2 !=0, (m7_1 / m7_2), 0)", "label": "i-03e0116199ae185c4 (sol-test12-i4i16xlarge-instance-store)", "id": "e7" } ],
-                    [ "CWAgent", "diskio_read_time", "InstanceId", "i-03e0116199ae185c4", "name", "nvme2n1", { "id": "m7_1", "visible": false, "stat": "Sum", "period": 60 } ],
-                    [ "CWAgent", "diskio_reads", "InstanceId", "i-03e0116199ae185c4", "name", "nvme2n1", { "id": "m7_2", "visible": false, "stat": "Sum", "period": 60 } ]
+                    [ { "expression": "IF(m7_2 !=0, (m7_1 / m7_2), 0)", "label": "i-02c976b0c2c79b726 (solana-node-1)", "id": "e7" } ],
+                    [ "CWAgent", "diskio_read_time", "InstanceId", "i-02c976b0c2c79b726", "name", "nvme2n1", { "id": "m7_1", "visible": false, "stat": "Sum", "period": 60 } ],
+                    [ "CWAgent", "diskio_reads", "InstanceId", "i-02c976b0c2c79b726", "name", "nvme2n1", { "id": "m7_2", "visible": false, "stat": "Sum", "period": 60 } ]
                 ],
                 "title": "Accounts Disc AVG read latency (ms/op)"
             }
@@ -343,9 +343,9 @@
                 },
                 "region": "us-east-2",
                 "metrics": [
-                    [ { "expression": "IF(m7_2 !=0, (m7_1 / m7_2), 0)", "label": "i-03e0116199ae185c4 (sol-test12-i4i16xlarge-instance-store)", "id": "e7" } ],
-                    [ "CWAgent", "diskio_write_time", "InstanceId", "i-03e0116199ae185c4", "name", "nvme2n1", { "id": "m7_1", "visible": false, "stat": "Sum", "period": 60 } ],
-                    [ "CWAgent", "diskio_writes", "InstanceId", "i-03e0116199ae185c4", "name", "nvme2n1", { "id": "m7_2", "visible": false, "stat": "Sum", "period": 60 } ]
+                    [ { "expression": "IF(m7_2 !=0, (m7_1 / m7_2), 0)", "label": "i-02c976b0c2c79b726 (solana-node-1)", "id": "e7" } ],
+                    [ "CWAgent", "diskio_write_time", "InstanceId", "i-02c976b0c2c79b726", "name", "nvme2n1", { "id": "m7_1", "visible": false, "stat": "Sum", "period": 60 } ],
+                    [ "CWAgent", "diskio_writes", "InstanceId", "i-02c976b0c2c79b726", "name", "nvme2n1", { "id": "m7_2", "visible": false, "stat": "Sum", "period": 60 } ]
                 ],
                 "title": "Accounts Disc AVG write latency (ms/op)"
             }
@@ -368,9 +368,9 @@
                 },
                 "region": "us-east-2",
                 "metrics": [
-                    [ { "expression": "IF(m7_2 !=0, (m7_1 / m7_2), 0)", "label": "i-03e0116199ae185c4 (sol-test12-i4i16xlarge-instance-store)", "id": "e7" } ],
-                    [ "CWAgent", "diskio_read_time", "InstanceId", "i-03e0116199ae185c4", "name", "nvme1n1", { "id": "m7_1", "visible": false, "stat": "Sum", "period": 60 } ],
-                    [ "CWAgent", "diskio_reads", "InstanceId", "i-03e0116199ae185c4", "name", "nvme1n1", { "id": "m7_2", "visible": false, "stat": "Sum", "period": 60 } ]
+                    [ { "expression": "IF(m7_2 !=0, (m7_1 / m7_2), 0)", "label": "i-02c976b0c2c79b726 (solana-node-1)", "id": "e7" } ],
+                    [ "CWAgent", "diskio_read_time", "InstanceId", "i-02c976b0c2c79b726", "name", "nvme1n1", { "id": "m7_1", "visible": false, "stat": "Sum", "period": 60 } ],
+                    [ "CWAgent", "diskio_reads", "InstanceId", "i-02c976b0c2c79b726", "name", "nvme1n1", { "id": "m7_2", "visible": false, "stat": "Sum", "period": 60 } ]
                 ],
                 "title": "Data Disc AVG read latency (ms/op)"
             }
@@ -393,9 +393,9 @@
                 },
                 "region": "us-east-2",
                 "metrics": [
-                    [ { "expression": "IF(m7_2 !=0, (m7_1 / m7_2), 0)", "label": "i-03e0116199ae185c4 (sol-test12-i4i16xlarge-instance-store)", "id": "e7" } ],
-                    [ "CWAgent", "diskio_write_time", "InstanceId", "i-03e0116199ae185c4", "name", "nvme1n1", { "id": "m7_1", "visible": false, "stat": "Sum", "period": 60 } ],
-                    [ "CWAgent", "diskio_writes", "InstanceId", "i-03e0116199ae185c4", "name", "nvme1n1", { "id": "m7_2", "visible": false, "stat": "Sum", "period": 60 } ]
+                    [ { "expression": "IF(m7_2 !=0, (m7_1 / m7_2), 0)", "label": "i-02c976b0c2c79b726 (solana-node-1)", "id": "e7" } ],
+                    [ "CWAgent", "diskio_write_time", "InstanceId", "i-02c976b0c2c79b726", "name", "nvme1n1", { "id": "m7_1", "visible": false, "stat": "Sum", "period": 60 } ],
+                    [ "CWAgent", "diskio_writes", "InstanceId", "i-02c976b0c2c79b726", "name", "nvme1n1", { "id": "m7_2", "visible": false, "stat": "Sum", "period": 60 } ]
                 ],
                 "title": "Data Disc AVG write latency (ms/op)"
             }

@@ -11,10 +11,11 @@ Parameters:
   Ec2AmiId:
     Type:  String
     Default: 'ami-0568936c8d2b91c4e' # Ubuntu, 20.04 LTS, amd64 focal image build on 2023-02-07
+    Description: "In other regions, search ofr Ubuntu, 20.04 LTS, amd64 focal image build on 2023-02-07"
   InstanceName:
-    Description: "Name of the instance"
+    Description: "Name of the instance. Must contain only alphanumeric characters and/or the following: +=,.@_-"
     Type: String
-    Default: Solana node on AWS
+    Default: solana-node
   DataDiscType:
     Description: "Set EBS type for to store state data (gp3, io2) or set to (none) for instnace store instances like i4i"
     Type: String
@@ -67,23 +68,28 @@ Resources:
             #!/bin/bash
             set +e
 
-            export SOLANA_VERSION=${SOLANA_VERSION}
-            export DISC_TYPE=${DISC_TYPE}
-            export NODE_IDENTITY_SECRET_ARN=${NODE_IDENTITY_SECRET_ARN}
-            export SOLANA_NODE_TYPE=${SOLANA_NODE_TYPE}
+            sudo bash -c 'echo "SOLANA_VERSION=${SOLANA_VERSION}" >> /etc/environment'
+            sudo bash -c 'echo "DISC_TYPE=${DISC_TYPE}" >> /etc/environment'
+            sudo bash -c 'echo "NODE_IDENTITY_SECRET_ARN=${NODE_IDENTITY_SECRET_ARN}" >> /etc/environment'
+            sudo bash -c 'echo "SOLANA_NODE_TYPE=${SOLANA_NODE_TYPE}" >> /etc/environment'
+            export SOLANA_VERSION
+            export DISC_TYPE
+            export NODE_IDENTITY_SECRET_ARN
+            export SOLANA_NODE_TYPE
 
             sudo apt-get -yqq update
             sudo apt-get -yqq install awscli
 
+            cd ~
             wget -q https://raw.githubusercontent.com/frbrkoala/solana-configs-for-aws/main/src/scripts/user-data/node-user-data.sh
-            sudo aws s3 cp s3://$ASSETS_S3_BUCKET/solana/solana-user-data.sh /opt/user-data.sh
+            sudo cp ./node-user-data.sh /opt/user-data.sh
 
             sudo chmod +x /opt/user-data.sh
-            sudo /opt/user-data.sh
+            # sudo /opt/user-data.sh
           - SOLANA_VERSION: !Ref SolanaVersion
-          - DISC_TYPE: !Ref DataDiscType
-          - NODE_IDENTITY_SECRET_ARN: !Ref SolanaNodeIdentitySecretARN
-          - SOLANA_NODE_TYPE: !Ref SolanaNodeType
+            DISC_TYPE: !Ref DataDiscType
+            NODE_IDENTITY_SECRET_ARN: !Ref SolanaNodeIdentitySecretARN
+            SOLANA_NODE_TYPE: !Ref SolanaNodeType
       BlockDeviceMappings:
       - DeviceName: /dev/sda1
         Ebs:

@@ -1,6 +1,8 @@
 #!/bin/bash
 set +e
 
+export AWS_REGION=`curl http://169.254.169.254/latest/dynamic/instance-identity/document|grep region|awk -F\" '{print $4}'`
+
 echo "SOLANA_VERSION="$SOLANA_VERSION
 echo "DISC_TYPE="$$DISC_TYPE
 echo "NODE_IDENTITY_SECRET_ARN="$NODE_IDENTITY_SECRET_ARN
@@ -10,12 +12,12 @@ echo "Install and configure CloudWatch agent"
 wget -q https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
 sudo dpkg -i -E amazon-cloudwatch-agent.deb
 
-wget -q https://raw.githubusercontent.com/frbrkoala/solana-configs-for-aws/main/src/configs/cloudwatch-agent-config.json
-cp ./cloudwatch-agent-config.json /opt/aws/amazon-cloudwatch-agent/etc/custom-amazon-cloudwatch-agent.json
+sudo wget -q https://raw.githubusercontent.com/frbrkoala/solana-configs-for-aws/main/src/configs/cloudwatch-agent-config.json
+sudo cp ./cloudwatch-agent-config.json /opt/aws/amazon-cloudwatch-agent/etc/custom-amazon-cloudwatch-agent.json
 
 sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
 -a fetch-config -c file:/opt/aws/amazon-cloudwatch-agent/etc/custom-amazon-cloudwatch-agent.json -m ec2 -s
-sudo systemctl status amazon-cloudwatch-agent
+#sudo systemctl status amazon-cloudwatch-agent
 
 echo "Fine tune sysctl to prepare the system for Solana"
 
@@ -129,14 +131,14 @@ sudo useradd -u 1002 -g 1002 -m -s /bin/bash solana
 sudo usermod -aG sudo solana
 
 cd /home/solana
-mkdir ./bin
+sudo mkdir ./bin
 
 echo "Download and unpack Solana"
 echo "Downloading x86 binaries for version v$SOLANA_VERSION"
 
-wget -q https://github.com/solana-labs/solana/releases/download/v$SOLANA_VERSION/solana-release-x86_64-unknown-linux-gnu.tar.bz2
-tar -xjvf solana-release-x86_64-unknown-linux-gnu.tar.bz2
-mv solana-release/bin/* ./bin/
+sudo wget -q https://github.com/solana-labs/solana/releases/download/v$SOLANA_VERSION/solana-release-x86_64-unknown-linux-gnu.tar.bz2
+sudo tar -xjvf solana-release-x86_64-unknown-linux-gnu.tar.bz2
+sudo mv solana-release/bin/* ./bin/
 
 echo "Preparing Solana start script"
 
@@ -190,19 +192,17 @@ export RUST_BACKTRACE=full
 EOF'
 
 sudo chmod +x validator.sh
-sudo chmod +x solana
-sudo chmod +x solana-validator
-sudo chmod +x solana-keygen
 
 if [[ $NODE_IDENTITY_SECRET_ARN == "none" ]]; then
     echo "Create node identity"
     sudo ./solana-keygen new --no-passphrase -o /home/solana/config/validator-keypair.json
-    NODE_IDENTITY=$(./solana-keygen pubkey /home/solana/config/validator-keypair.json)
+    NODE_IDENTITY=$(sudo ./solana-keygen pubkey /home/solana/config/validator-keypair.json)
     echo "Backing up node identity to AWS Secrets Manager"
-    aws secretsmanager create-secret --name "solana-node/"$NODE_IDENTITY --description "Solana Node identity" --secret-string file:///home/solana/config/validator-keypair.json
+    sudo aws secretsmanager create-secret --name "solana-node/"$NODE_IDENTITY --description "Solana Node identity" --secret-string file:///home/solana/config/validator-keypair.json --region $AWS_REGION
 else
     echo "Retrieving node identity from AWS Secrets Manager"
-    aws secretsmanager get-secret-value --secret-id $NODE_IDENTITY_SECRET_ARN --query SecretString --output text > /home/solana/config/validator-keypair.json
+    sudo aws secretsmanager get-secret-value --secret-id $NODE_IDENTITY_SECRET_ARN --query SecretString --output text --region $AWS_REGION > ~/validator-keypair.json
+    sudo mv ~/validator-keypair.json /home/solana/config/validator-keypair.json
 fi
 
 echo "Making sure the solana user has access to everything needed"
@@ -248,7 +248,8 @@ sudo cp logrotate.sol /etc/logrotate.d/sol
 sudo systemctl restart logrotate.service
 
 echo "Configuring syncchecker script"
-sudo aws s3 cp s3://$ASSETS_S3_BUCKET/syncchecker-solana.sh /opt/syncchecker.sh
+cd /opt
+sudo wget https://raw.githubusercontent.com/frbrkoala/solana-configs-for-aws/main/src/scripts/syncchecker-solana.sh
 sudo chmod +x /opt/syncchecker.sh
 
 echo "*/1 * * * * /opt/syncchecker.sh >/tmp/syncchecker.log 2>&1" | crontab
