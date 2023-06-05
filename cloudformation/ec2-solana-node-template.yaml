@@ -78,7 +78,7 @@ Resources:
             export SOLANA_NODE_TYPE
 
             sudo apt-get -yqq update
-            sudo apt-get -yqq install awscli
+            sudo apt-get -yqq install awscli jq
 
             cd ~
             wget -q https://raw.githubusercontent.com/frbrkoala/solana-configs-for-aws/main/src/scripts/user-data/node-user-data.sh

@@ -250,6 +250,7 @@ sudo systemctl restart logrotate.service
 echo "Configuring syncchecker script"
 cd /opt
 sudo wget https://raw.githubusercontent.com/frbrkoala/solana-configs-for-aws/main/src/scripts/syncchecker-solana.sh
+sudo mv /opt/syncchecker-solana.sh /opt/syncchecker.sh
 sudo chmod +x /opt/syncchecker.sh
 
 echo "*/1 * * * * /opt/syncchecker.sh >/tmp/syncchecker.log 2>&1" | crontab
