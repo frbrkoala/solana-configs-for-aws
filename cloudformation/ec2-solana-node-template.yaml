@@ -1,0 +1,165 @@
+
+AWSTemplateFormatVersion: '2010-09-09'
+Metadata: 
+  License: Apache-2.0
+Description: AWS CloudFormation Sample Template for x86 and ARM64 EC2 for Solana blockcahin node
+Parameters:
+  InstanceType:
+    Description: EC2 instance type. Recommended types are r6a, r6i, i4i (with instance store) and network-enhanced classes like r6in, 
+    Type: String
+    Default: r6a.8xlarge
+  Ec2AmiId:
+    Type:  String
+    Default: 'ami-0568936c8d2b91c4e' # Ubuntu, 20.04 LTS, amd64 focal image build on 2023-02-07
+  InstanceName:
+    Description: "Name of the instance"
+    Type: String
+    Default: Solana node on AWS
+  DataDiscType:
+    Description: "Set EBS type for to store state data (gp3, io2) or set to (none) for instnace store instances like i4i"
+    Type: String
+    AllowedValues:
+      - "io2"
+      - "gp3"
+      - "none"
+    Default: "gp3"
+  AccountsDiscType:
+    Description: "Set EBS type for to store accounts data (gp3, io2) or set to (none) for instnace store instances like i4i"
+    Type: String
+    AllowedValues:
+      - "io2"
+      - "gp3"
+      - "none"
+    Default: "gp3"
+  SolanaVersion:
+    Description: "The version of Solana to deploy. Select from here: https://github.com/solana-labs/solana/releases"
+    Type: String
+    Default: "1.14.17"
+  SolanaNodeIdentitySecretARN:
+    Description: "The ARN of the secret in AWS Secrets Manager with the node's identity"
+    Type: String
+    Default: "none"
+  SolanaNodeType:
+    Description: "Choose Solana Node Type (validator, lightrpc, heavyrpc). For heavyrpc node type make sure you choose instances with at least 1TB of RAM."
+    Type: String
+    Default: "lightrpc"
+    AllowedValues:
+      - "validator"
+      - "lightrpc"
+      - "heavyrpc"
+Conditions:
+  AddDataDisc: !Not [!Equals [!Ref DataDiscType, "none"]]
+  AddAccountsDisc: !Not [!Equals [!Ref AccountsDiscType, "none"]]
+Resources:
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref 'InstanceType'
+      ImageId: !Ref 'Ec2AmiId'
+      SecurityGroups: [!Ref 'EC2SecurityGroup']
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      AvailabilityZone: !Select 
+        - 0
+        - Fn::GetAZs: !Ref 'AWS::Region'
+      UserData:
+        Fn::Base64: !Sub
+          - |
+            #!/bin/bash
+            set +e
+
+            export SOLANA_VERSION=${SOLANA_VERSION}
+            export DISC_TYPE=${DISC_TYPE}
+            export NODE_IDENTITY_SECRET_ARN=${NODE_IDENTITY_SECRET_ARN}
+            export SOLANA_NODE_TYPE=${SOLANA_NODE_TYPE}
+
+            sudo apt-get -yqq update
+            sudo apt-get -yqq install awscli
+
+            wget -q https://raw.githubusercontent.com/frbrkoala/solana-configs-for-aws/main/src/scripts/user-data/node-user-data.sh
+            sudo aws s3 cp s3://$ASSETS_S3_BUCKET/solana/solana-user-data.sh /opt/user-data.sh
+
+            sudo chmod +x /opt/user-data.sh
+            sudo /opt/user-data.sh
+          - SOLANA_VERSION: !Ref SolanaVersion
+          - DISC_TYPE: !Ref DataDiscType
+          - NODE_IDENTITY_SECRET_ARN: !Ref SolanaNodeIdentitySecretARN
+          - SOLANA_NODE_TYPE: !Ref SolanaNodeType
+      BlockDeviceMappings:
+      - DeviceName: /dev/sda1
+        Ebs:
+          VolumeType: "gp3"
+          VolumeSize: 400
+      - !If
+        - AddDataDisc 
+        - DeviceName: /dev/sdb
+          Ebs:
+            VolumeType: !Ref 'DataDiscType'
+            Iops: "16000"
+            DeleteOnTermination: "true"
+            VolumeSize: 500
+        - !Ref "AWS::NoValue"
+      - !If
+        - AddAccountsDisc 
+        - DeviceName: /dev/sdm
+          Ebs:
+            VolumeType: !Ref 'AccountsDiscType'
+            Iops: "16000"
+            DeleteOnTermination: "true"
+            VolumeSize: 2000
+        - !Ref "AWS::NoValue"
+      Tags: 
+        - Key: "Name"
+          Value: !Ref 'InstanceName'
+  EC2InstanceProfile: 
+    Type: "AWS::IAM::InstanceProfile"
+    Properties: 
+      Path: "/"
+      Roles: 
+        - 
+          Ref: "EC2Role"
+  EC2Role:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Ref 'InstanceName'
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
+        - "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+        - "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Solana Blockchain Nodes Access
+      SecurityGroupIngress:
+      # UDP - P2P protocols (gossip, turbine, repair, etc)
+      - IpProtocol: tcp
+        FromPort: '8801'
+        ToPort: '8812'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: udp
+        FromPort: '8801'
+        ToPort: '8812'
+        CidrIp: 0.0.0.0/0
+      # RPC port HTTP (user access needs to be restricted)
+      - IpProtocol: tcp
+        FromPort: '8899'
+        ToPort: '8899'
+        CidrIp: 172.16.0.0/12
+      # RPC port WebSocket (user access needs to be restricted)
+      - IpProtocol: tcp
+        FromPort: '8900'
+        ToPort: '8900'
+        CidrIp: 172.16.0.0/12
+Outputs:
+  Instance:
+    Value: !GetAtt [EC2Instance, PublicDnsName]
+    Description: DNS Name of the newly created EC2 instance
