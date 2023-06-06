@@ -11,7 +11,7 @@ Parameters:
   Ec2AmiId:
     Type:  String
     Default: 'ami-0568936c8d2b91c4e' # Ubuntu, 20.04 LTS, amd64 focal image build on 2023-02-07
-    Description: "In other regions, search ofr Ubuntu, 20.04 LTS, amd64 focal image build on 2023-02-07"
+    Description: "In other regions, search for Ubuntu, 20.04 LTS, amd64 focal image build on 2023-02-07"
   InstanceName:
     Description: "Name of the instance. Must contain only alphanumeric characters and/or the following: +=,.@_-"
     Type: String
@@ -167,7 +167,9 @@ Resources:
   Dashboard:
       Type: "AWS::CloudWatch::Dashboard"
       Properties:
-          DashboardName: !Ref DashboardName
+          DashboardName: !Sub 
+                - '${InstanceName}-1' 
+                - InstanceName: !Ref 'InstanceName'
           DashboardBody: !Sub 
             - |
               {
@@ -188,7 +190,7 @@ Resources:
                                     "min": 0
                                 }
                             },
-                            "region": "us-east-2",
+                            "region": "${AWS::Region}",
                             "metrics": [
                                 [ "AWS/EC2", "CPUUtilization", "InstanceId", "${INSTANCE_ID}", { "label": "${INSTANCE_ID}-${INSTANCE_NAME}" } ]
                             ],
@@ -211,7 +213,7 @@ Resources:
                                     "min": 0
                                 }
                             },
-                            "region": "us-east-2",
+                            "region": "${AWS::Region}",
                             "metrics": [
                                 [ "AWS/EC2", "NetworkIn", "InstanceId", "${INSTANCE_ID}", { "label": "${INSTANCE_ID}-${INSTANCE_NAME}" } ]
                             ],
@@ -234,7 +236,7 @@ Resources:
                                     "min": 0
                                 }
                             },
-                            "region": "us-east-2",
+                            "region": "${AWS::Region}",
                             "metrics": [
                                 [ "AWS/EC2", "NetworkOut", "InstanceId", "${INSTANCE_ID}", { "label": "${INSTANCE_ID}-${INSTANCE_NAME}" } ]
                             ],
@@ -250,7 +252,7 @@ Resources:
                         "properties": {
                             "view": "timeSeries",
                             "stacked": false,
-                            "region": "us-east-2",
+                            "region": "${AWS::Region}",
                             "stat": "Average",
                             "period": 300,
                             "metrics": [
@@ -268,7 +270,7 @@ Resources:
                         "properties": {
                             "view": "timeSeries",
                             "stacked": false,
-                            "region": "us-east-2",
+                            "region": "${AWS::Region}",
                             "stat": "Average",
                             "period": 300,
                             "metrics": [
@@ -292,7 +294,7 @@ Resources:
                             ],
                             "view": "timeSeries",
                             "stacked": false,
-                            "region": "us-east-2",
+                            "region": "${AWS::Region}",
                             "stat": "Sum",
                             "period": 60,
                             "title": "nvme1n1 Volume Read/Write (IO/sec)"
@@ -306,14 +308,14 @@ Resources:
                         "type": "metric",
                         "properties": {
                             "metrics": [
-                                [ { "expression": "m7/PERIOD(m7)", "label": "Write", "id": "e7", "region": "us-east-2" } ],
+                                [ { "expression": "m7/PERIOD(m7)", "label": "Write", "id": "e7", "region": "${AWS::Region}" } ],
                                 [ "CWAgent", "diskio_writes", "InstanceId", "${INSTANCE_ID}", "name", "nvme2n1", { "id": "m7", "visible": false, "stat": "Sum", "period": 60 } ],
-                                [ { "expression": "m8/PERIOD(m8)", "label": "Read", "id": "e8", "region": "us-east-2" } ],
+                                [ { "expression": "m8/PERIOD(m8)", "label": "Read", "id": "e8", "region": "${AWS::Region}" } ],
                                 [ "CWAgent", "diskio_reads", "InstanceId", "${INSTANCE_ID}", "name", "nvme2n1", { "id": "m8", "visible": false, "stat": "Sum", "period": 60 } ]
                             ],
                             "view": "timeSeries",
                             "stacked": false,
-                            "region": "us-east-2",
+                            "region": "${AWS::Region}",
                             "stat": "Average",
                             "period": 300,
                             "title": "nvme2n1 Volume Read/Write (IO/sec)"
@@ -327,14 +329,14 @@ Resources:
                         "type": "metric",
                         "properties": {
                             "metrics": [
-                                [ { "expression": "m2/PERIOD(m2)", "label": "Read", "id": "e2", "period": 60, "region": "us-east-2" } ],
+                                [ { "expression": "m2/PERIOD(m2)", "label": "Read", "id": "e2", "period": 60, "region": "${AWS::Region}" } ],
                                 [ "CWAgent", "diskio_read_bytes", "InstanceId", "${INSTANCE_ID}", "name", "nvme2n1", { "id": "m2", "stat": "Sum", "visible": false, "period": 60 } ],
-                                [ { "expression": "m3/PERIOD(m3)", "label": "Write", "id": "e3", "period": 60, "region": "us-east-2" } ],
+                                [ { "expression": "m3/PERIOD(m3)", "label": "Write", "id": "e3", "period": 60, "region": "${AWS::Region}" } ],
                                 [ "CWAgent", "diskio_write_bytes", "InstanceId", "${INSTANCE_ID}", "name", "nvme2n1", { "id": "m3", "stat": "Sum", "visible": false, "period": 60 } ]
                             ],
                             "view": "timeSeries",
                             "stacked": false,
-                            "region": "us-east-2",
+                            "region": "${AWS::Region}",
                             "stat": "Average",
                             "period": 60,
                             "title": "nvme2n1 Volume Read/Write throughput (bytes/sec)"
@@ -353,7 +355,7 @@ Resources:
                             "sparkline": true,
                             "view": "timeSeries",
                             "stacked": false,
-                            "region": "us-east-2",
+                            "region": "${AWS::Region}",
                             "stat": "Maximum",
                             "period": 60,
                             "title": "Solana Block Height"
@@ -369,7 +371,7 @@ Resources:
                             "sparkline": true,
                             "view": "timeSeries",
                             "stacked": false,
-                            "region": "us-east-2",
+                            "region": "${AWS::Region}",
                             "stat": "Maximum",
                             "period": 60,
                             "metrics": [
@@ -395,7 +397,7 @@ Resources:
                                     "min": 0
                                 }
                             },
-                            "region": "us-east-2",
+                            "region": "${AWS::Region}",
                             "metrics": [
                                 [ { "expression": "IF(m7_2 !=0, (m7_1 / m7_2), 0)", "label": "Read", "id": "e7" } ],
                                 [ "CWAgent", "diskio_read_time", "InstanceId", "${INSTANCE_ID}", "name", "nvme2n1", { "id": "m7_1", "visible": false, "stat": "Sum", "period": 60 } ],
@@ -423,7 +425,7 @@ Resources:
                                     "min": 0
                                 }
                             },
-                            "region": "us-east-2",
+                            "region": "${AWS::Region}",
                             "metrics": [
                                 [ { "expression": "IF(m7_2 !=0, (m7_1 / m7_2), 0)", "label": "Read", "id": "e7" } ],
                                 [ "CWAgent", "diskio_read_time", "InstanceId", "${INSTANCE_ID}", "name", "nvme1n1", { "id": "m7_1", "visible": false, "stat": "Sum", "period": 60 } ],
@@ -443,14 +445,14 @@ Resources:
                         "type": "metric",
                         "properties": {
                             "metrics": [
-                                [ { "expression": "m2/PERIOD(m2)", "label": "Read", "id": "e2", "period": 60, "region": "us-east-2" } ],
+                                [ { "expression": "m2/PERIOD(m2)", "label": "Read", "id": "e2", "period": 60, "region": "${AWS::Region}" } ],
                                 [ "CWAgent", "diskio_read_bytes", "InstanceId", "${INSTANCE_ID}", "name", "nvme1n1", { "id": "m2", "stat": "Sum", "visible": false, "period": 60 } ],
-                                [ { "expression": "m3/PERIOD(m3)", "label": "Write", "id": "e3", "period": 60, "region": "us-east-2" } ],
+                                [ { "expression": "m3/PERIOD(m3)", "label": "Write", "id": "e3", "period": 60, "region": "${AWS::Region}" } ],
                                 [ "CWAgent", "diskio_write_bytes", "InstanceId", "${INSTANCE_ID}", "name", "nvme1n1", { "id": "m3", "stat": "Sum", "visible": false, "period": 60 } ]
                             ],
                             "view": "timeSeries",
                             "stacked": false,
-                            "region": "us-east-2",
+                            "region": "${AWS::Region}",
                             "stat": "Average",
                             "period": 60,
                             "title": "nvme1n1 Volume Read/Write throughput (bytes/sec)"
@@ -464,5 +466,5 @@ Resources:
                 - InstanceName: !Ref 'InstanceName'
 Outputs:
   Instance:
-    Value: !GetAtt [EC2Instance, PublicDnsName]
+    Value: !GetAtt [EC2Instance1, PublicDnsName]
     Description: DNS Name of the newly created EC2 instance
