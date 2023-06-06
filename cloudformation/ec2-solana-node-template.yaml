@@ -2,10 +2,10 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Metadata: 
   License: Apache-2.0
-Description: AWS CloudFormation Sample Template for x86 and ARM64 EC2 for Solana blockcahin node
+Description: AWS CloudFormation Sample Template for x86 EC2 for Solana blockcahin node.
 Parameters:
   InstanceType:
-    Description: EC2 instance type. Recommended types are r6a, r6i, i4i (with instance store) and network-enhanced classes like r6in, 
+    Description: EC2 instance type. Recommended types are r6a, r6i, and i4i (with instance store) and network-enhanced classes like r6in. 
     Type: String
     Default: r6a.8xlarge
   Ec2AmiId:
@@ -17,15 +17,19 @@ Parameters:
     Type: String
     Default: solana-node
   DataDiscType:
-    Description: "Set EBS type for to store state data (gp3, io2) or set to (none) for instnace store instances like i4i"
+    Description: "Set EBS type for to store state data (gp3, io2) or set to (none) for instnace store instances like i4i."
     Type: String
     AllowedValues:
       - "io2"
       - "gp3"
       - "none"
     Default: "gp3"
+  CIDRAllowedAccessRPC:
+    Description: "A CIDR block that is allowed to connect to the node's RPC ports."
+    Type: String
+    Default: "172.16.0.0/12"
   AccountsDiscType:
-    Description: "Set EBS type for to store accounts data (gp3, io2) or set to (none) for instnace store instances like i4i"
+    Description: "Set EBS type for to store accounts data (gp3, io2) or set to (none) for instnace store instances like i4i."
     Type: String
     AllowedValues:
       - "io2"
@@ -33,13 +37,9 @@ Parameters:
       - "none"
     Default: "gp3"
   SolanaVersion:
-    Description: "The version of Solana to deploy. Select from here: https://github.com/solana-labs/solana/releases"
+    Description: "The version of Solana to deploy. Select from here: https://github.com/solana-labs/solana/releases ."
     Type: String
     Default: "1.14.17"
-  SolanaNodeIdentitySecretARN:
-    Description: "The ARN of the secret in AWS Secrets Manager with the node's identity"
-    Type: String
-    Default: "none"
   SolanaNodeType:
     Description: "Choose Solana Node Type (validator, lightrpc, heavyrpc). For heavyrpc node type make sure you choose instances with at least 1TB of RAM."
     Type: String
@@ -48,9 +48,18 @@ Parameters:
       - "validator"
       - "lightrpc"
       - "heavyrpc"
+  VoteAccountSecretARN:
+    Description: "Optional for validator node type. ARN of the secret in AWS Secrets Manager with the Vote Account's key pair."
+    Type: String
+    Default: "none"
+  AuthorizedWithdrawerAccountSecretARN:
+    Description: "Optional for validator node type. The ARN of the secret in AWS Secrets Manager with the Authorized Withdrawer Account's key pair."
+    Type: String
+    Default: "none"
 Conditions:
   AddDataDisc: !Not [!Equals [!Ref DataDiscType, "none"]]
   AddAccountsDisc: !Not [!Equals [!Ref AccountsDiscType, "none"]]
+  EnableRPCPorts: !Not [!Equals [!Ref SolanaNodeType, "none"]]
 Resources:
   EC2Instance1:
     Type: AWS::EC2::Instance
@@ -68,10 +77,12 @@ Resources:
             #!/bin/bash
             set +e
 
-            sudo bash -c 'echo "SOLANA_VERSION=${SOLANA_VERSION}" >> /etc/environment'
             sudo bash -c 'echo "DISC_TYPE=${DISC_TYPE}" >> /etc/environment'
-            sudo bash -c 'echo "NODE_IDENTITY_SECRET_ARN=${NODE_IDENTITY_SECRET_ARN}" >> /etc/environment'
+            sudo bash -c 'echo "SOLANA_VERSION=${SOLANA_VERSION}" >> /etc/environment'
             sudo bash -c 'echo "SOLANA_NODE_TYPE=${SOLANA_NODE_TYPE}" >> /etc/environment'
+            sudo bash -c 'echo "NODE_IDENTITY_SECRET_ARN=${NODE_IDENTITY_SECRET_ARN}" >> /etc/environment'
+            sudo bash -c 'echo "VOTE_ACCOUNT_SECRET_ARN=${VOTE_ACCOUNT_SECRET_ARN}" >> /etc/environment'
+            sudo bash -c 'echo "AUTHORIZED_WITHDRAWER_ACCOUNT_SECRET_ARN=${AUTHORIZED_WITHDRAWER_ACCOUNT_SECRET_ARN}" >> /etc/environment'
             sudo source /etc/environment
 
             sudo apt-get -yqq update
@@ -83,10 +94,12 @@ Resources:
 
             sudo chmod +x /opt/user-data.sh
             sudo /opt/user-data.sh
-          - SOLANA_VERSION: !Ref SolanaVersion
-            DISC_TYPE: !Ref DataDiscType
-            NODE_IDENTITY_SECRET_ARN: !Ref SolanaNodeIdentitySecretARN
+          - DISC_TYPE: !Ref DataDiscType
+            SOLANA_VERSION: !Ref SolanaVersion
             SOLANA_NODE_TYPE: !Ref SolanaNodeType
+            NODE_IDENTITY_SECRET_ARN: !Ref SolanaNodeIdentitySecretARN
+            VOTE_ACCOUNT_SECRET_ARN: !Ref VoteAccountSecretARN
+            AUTHORIZED_WITHDRAWER_ACCOUNT_SECRET_ARN: !Ref AuthorizedWithdrawerAccountSecretARN
       BlockDeviceMappings:
       - DeviceName: /dev/sda1
         Ebs:
@@ -154,16 +167,16 @@ Resources:
         FromPort: '8801'
         ToPort: '8812'
         CidrIp: 0.0.0.0/0
-      # RPC port HTTP (user access needs to be restricted)
+      # RPC port HTTP (user access needs to be restricted. Allowed access only from internal 172.16.x.x)
       - IpProtocol: tcp
         FromPort: '8899'
         ToPort: '8899'
-        CidrIp: 172.16.0.0/12
-      # RPC port WebSocket (user access needs to be restricted)
+        CidrIp: !Ref CIDRAllowedAccessRPC
+      # RPC port WebSocket (user access needs to be restricted. Allowed access only from internal 172.16.x.x)
       - IpProtocol: tcp
         FromPort: '8900'
         ToPort: '8900'
-        CidrIp: 172.16.0.0/12
+        CidrIp: !Ref CIDRAllowedAccessRPC
   Dashboard:
       Type: "AWS::CloudWatch::Dashboard"
       Properties:

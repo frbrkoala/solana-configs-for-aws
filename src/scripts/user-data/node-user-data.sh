@@ -3,10 +3,12 @@ set +e
 
 export AWS_REGION=`curl http://169.254.169.254/latest/dynamic/instance-identity/document|grep region|awk -F\" '{print $4}'`
 
-echo "SOLANA_VERSION="$SOLANA_VERSION
 echo "DISC_TYPE="$$DISC_TYPE
-echo "NODE_IDENTITY_SECRET_ARN="$NODE_IDENTITY_SECRET_ARN
+echo "SOLANA_VERSION="$SOLANA_VERSION
 echo "SOLANA_NODE_TYPE="$SOLANA_NODE_TYPE
+echo "NODE_IDENTITY_SECRET_ARN="$NODE_IDENTITY_SECRET_ARN
+echo "VOTE_ACCOUNT_SECRET_ARN="$VOTE_ACCOUNT_SECRET_ARN
+echo "AUTHORIZED_WITHDRAWER_ACCOUNT_SECRET_ARN="$AUTHORIZED_WITHDRAWER_ACCOUNT_SECRET_ARN
 
 echo "Install and configure CloudWatch agent"
 wget -q https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
@@ -143,52 +145,6 @@ sudo mv solana-release/bin/* ./bin/
 echo "Preparing Solana start script"
 
 cd /home/solana/bin
-sudo bash -c 'cat > validator.sh <<EOF
-#!/bin/bash
-set -o errexit
-set -o nounset
-set -o pipefail
-# Remove empty snapshots
-find "/var/solana/data/ledger" -name "snapshot-*" -size 0 -print -exec rm {} \; || true
-export RUST_LOG=warning
-export RUST_BACKTRACE=full
-/home/solana/bin/solana-validator \
---ledger /var/solana/data/ledger \
---identity /home/solana/config/validator-keypair.json \
---known-validator 7Np41oeYqPefeNQEHSv1UDhYrehxin3NStELsSKCT4K2 \
---known-validator GdnSyH3YtwcxFvQrVVJMm1JhTS4QVX7MFsX56uJLUfiZ \
---known-validator DE1bawNcRJB9rVm3buyMVfr8mBEoyyu73NBovf2oXJsJ \
---known-validator CakcnaRDHka2gXyfbEd2d3xsvkJkqsLw2akB3zsN1D2S \
---expected-genesis-hash 5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d \
---entrypoint entrypoint.mainnet-beta.solana.com:8001 \
---entrypoint entrypoint2.mainnet-beta.solana.com:8001 \
---entrypoint entrypoint3.mainnet-beta.solana.com:8001 \
---entrypoint entrypoint4.mainnet-beta.solana.com:8001 \
---entrypoint entrypoint5.mainnet-beta.solana.com:8001 \
---no-voting \
---snapshot-interval-slots 500 \
---maximum-local-snapshot-age 500 \
---full-rpc-api \
---rpc-port 8899 \
---gossip-port 8801 \
---dynamic-port-range 8800-8813 \
---no-port-check \
---wal-recovery-mode skip_any_corrupted_record \
---enable-rpc-transaction-history \
---enable-cpi-and-log-storage \
---init-complete-file /var/solana/data/init-completed \
---snapshot-compression none \
---require-tower \
---no-wait-for-vote-to-start-leader \
---limit-ledger-size 50000000 \
---accounts /var/solana/accounts \
---no-os-cpu-stats-reporting \
---no-os-memory-stats-reporting \
---no-os-network-stats-reporting \
---log -
-EOF'
-
-sudo chmod +x validator.sh
 
 if [[ $NODE_IDENTITY_SECRET_ARN == "none" ]]; then
     echo "Create node identity"
@@ -201,6 +157,123 @@ else
     sudo aws secretsmanager get-secret-value --secret-id $NODE_IDENTITY_SECRET_ARN --query SecretString --output text --region $AWS_REGION > ~/validator-keypair.json
     sudo mv ~/validator-keypair.json /home/solana/config/validator-keypair.json
 fi
+
+if [[ "$SOLANA_NODE_TYPE" == "validator" ]]; then
+    if [[ $VOTE_ACCOUNT_SECRET_ARN == "none" ]]; then
+        echo "Create Vote Account Secret"
+        sudo ./solana-keygen new --no-passphrase -o /home/solana/config/vote-account-keypair.json
+        NODE_IDENTITY=$(sudo ./solana-keygen pubkey /home/solana/config/vote-account-keypair.json)
+        echo "Backing up Vote Account Secret to AWS Secrets Manager"
+        sudo aws secretsmanager create-secret --name "solana-node/"$NODE_IDENTITY --description "Solana Vote Account Secret" --secret-string file:///home/solana/config/vote-account-keypair.json --region $AWS_REGION
+
+        if [[ $AUTHORIZED_WITHDRAWER_ACCOUNT_SECRET_ARN == "none" ]]; then
+            echo "Create Authorized Withdrawer Account Secret"
+            sudo ./solana-keygen new --no-passphrase -o /home/solana/config/authorized-withdrawer-keypair.json
+            NODE_IDENTITY=$(sudo ./solana-keygen pubkey /home/solana/config/authorized-withdrawer-keypair.json)
+            echo "Backing up Authorized Withdrawer Account  to AWS Secrets Manager"
+            sudo aws secretsmanager create-secret --name "solana-node/"$NODE_IDENTITY --description "Solana Vote Account Secret" --secret-string file:///home/solana/config/authorized-withdrawer-keypair.json --region $AWS_REGION
+        else
+            echo "Retrieving Authorized Withdrawer Account Secret from AWS Secrets Manager"
+            sudo aws secretsmanager get-secret-value --secret-id $VOTE_ACCOUNT_SECRET_ARN --query SecretString --output text --region $AWS_REGION > ~/authorized-withdrawer-keypair.json
+            sudo mv ~/authorized-withdrawer-keypair.json /home/solana/config/authorized-withdrawer-keypair.json
+            rm ~/authorized-withdrawer-keypair.json
+        fi
+
+        echo "Creating Vote Account on-chain"
+        solana create-vote-account /home/solana/config/vote-account-keypair.json /home/solana/config/validator-keypair.json /home/solana/config/authorized-withdrawer-keypair.json
+
+        echo "Deleting Authorized Withdrawer Account from the local disc"
+        rm /home/solana/config/authorized-withdrawer-keypair.json
+    else
+        echo "Retrieving Vote Account Secret from AWS Secrets Manager"
+        sudo aws secretsmanager get-secret-value --secret-id $VOTE_ACCOUNT_SECRET_ARN --query SecretString --output text --region $AWS_REGION > ~/vote-account-keypair.json
+        sudo mv ~/vote-account-keypair.json /home/solana/config/vote-account-keypair.json
+    fi
+
+    sudo bash -c 'cat > validator.sh <<EOF
+    #!/bin/bash
+    set -o errexit
+    set -o nounset
+    set -o pipefail
+    # Remove empty snapshots
+    find "/var/solana/data/ledger" -name "snapshot-*" -size 0 -print -exec rm {} \; || true
+    export RUST_LOG=warning
+    export RUST_BACKTRACE=full
+    /home/solana/bin/solana-validator \
+    --ledger /var/solana/data/ledger \
+    --identity /home/solana/config/validator-keypair.json \
+    --vote-account /home/solana/config/vote-account-keypair.json \
+    --known-validator 7Np41oeYqPefeNQEHSv1UDhYrehxin3NStELsSKCT4K2 \
+    --known-validator GdnSyH3YtwcxFvQrVVJMm1JhTS4QVX7MFsX56uJLUfiZ \
+    --known-validator DE1bawNcRJB9rVm3buyMVfr8mBEoyyu73NBovf2oXJsJ \
+    --known-validator CakcnaRDHka2gXyfbEd2d3xsvkJkqsLw2akB3zsN1D2S \
+    --expected-genesis-hash 5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d \
+    --entrypoint entrypoint.mainnet-beta.solana.com:8001 \
+    --entrypoint entrypoint2.mainnet-beta.solana.com:8001 \
+    --entrypoint entrypoint3.mainnet-beta.solana.com:8001 \
+    --entrypoint entrypoint4.mainnet-beta.solana.com:8001 \
+    --entrypoint entrypoint5.mainnet-beta.solana.com:8001 \
+    --rpc-port 8899 \
+    --no-port-check \
+    --wal-recovery-mode skip_any_corrupted_record \
+    --init-complete-file /var/solana/data/init-completed \
+    --limit-ledger-size 50000000 \
+    --accounts /var/solana/accounts \
+    --no-os-cpu-stats-reporting \
+    --no-os-memory-stats-reporting \
+    --no-os-network-stats-reporting \
+    --log -
+    EOF'
+fi
+
+if [[ "$SOLANA_NODE_TYPE" == "lightrpc" ]]; then
+    sudo bash -c 'cat > validator.sh <<EOF
+    #!/bin/bash
+    set -o errexit
+    set -o nounset
+    set -o pipefail
+    # Remove empty snapshots
+    find "/var/solana/data/ledger" -name "snapshot-*" -size 0 -print -exec rm {} \; || true
+    export RUST_LOG=warning
+    export RUST_BACKTRACE=full
+    /home/solana/bin/solana-validator \
+    --ledger /var/solana/data/ledger \
+    --identity /home/solana/config/validator-keypair.json \
+    --known-validator 7Np41oeYqPefeNQEHSv1UDhYrehxin3NStELsSKCT4K2 \
+    --known-validator GdnSyH3YtwcxFvQrVVJMm1JhTS4QVX7MFsX56uJLUfiZ \
+    --known-validator DE1bawNcRJB9rVm3buyMVfr8mBEoyyu73NBovf2oXJsJ \
+    --known-validator CakcnaRDHka2gXyfbEd2d3xsvkJkqsLw2akB3zsN1D2S \
+    --expected-genesis-hash 5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d \
+    --entrypoint entrypoint.mainnet-beta.solana.com:8001 \
+    --entrypoint entrypoint2.mainnet-beta.solana.com:8001 \
+    --entrypoint entrypoint3.mainnet-beta.solana.com:8001 \
+    --entrypoint entrypoint4.mainnet-beta.solana.com:8001 \
+    --entrypoint entrypoint5.mainnet-beta.solana.com:8001 \
+    --no-voting \
+    --snapshot-interval-slots 500 \
+    --maximum-local-snapshot-age 500 \
+    --full-rpc-api \
+    --rpc-port 8899 \
+    --gossip-port 8801 \
+    --dynamic-port-range 8800-8813 \
+    --no-port-check \
+    --wal-recovery-mode skip_any_corrupted_record \
+    --enable-rpc-transaction-history \
+    --enable-cpi-and-log-storage \
+    --init-complete-file /var/solana/data/init-completed \
+    --snapshot-compression none \
+    --require-tower \
+    --no-wait-for-vote-to-start-leader \
+    --limit-ledger-size 50000000 \
+    --accounts /var/solana/accounts \
+    --no-os-cpu-stats-reporting \
+    --no-os-memory-stats-reporting \
+    --no-os-network-stats-reporting \
+    --log -
+    EOF'
+fi
+
+sudo chmod +x validator.sh
 
 echo "Making sure the solana user has access to everything needed"
 sudo chown -R solana:solana /var/solana
