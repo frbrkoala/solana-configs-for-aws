@@ -105,30 +105,67 @@ Resources:
         Ebs:
           VolumeType: "gp3"
           VolumeSize: 400
-      - !If
-        - AddDataDisc 
-        - DeviceName: /dev/sdb
-          Ebs:
-            VolumeType: !Ref 'DataDiscType'
-            Iops: "16000"
-            DeleteOnTermination: "true"
-            VolumeSize: 500
-        - !Ref "AWS::NoValue"
-      - !If
-        - AddAccountsDisc 
-        - DeviceName: /dev/sdm
-          Ebs:
-            VolumeType: !Ref 'AccountsDiscType'
-            Iops: "16000"
-            DeleteOnTermination: "true"
-            VolumeSize: 2000
-        - !Ref "AWS::NoValue"
       Tags: 
         - Key: "Name"
           Value: !Sub 
             - '${InstanceName}-1' 
             - InstanceName: !Ref 'InstanceName'
-  EC2InstanceProfile: 
+        - Key: "Project"
+          Value: "solana-on-aws"
+          
+  DataEBSVolume:
+    Type: AWS::EC2::Volume
+    Properties:
+      VolumeType: !Ref 'DataDiscType'
+      Iops: "16000"
+      Throughput: 700
+      Size: 2000
+      Encrypted: true
+      AvailabilityZone: !GetAtt EC2Instance1.AvailabilityZone
+      Tags:
+        - Key: "Name"
+          Value: !Sub 
+            - '${InstanceName}-1-data' 
+            - InstanceName: !Ref 'InstanceName'
+        - Key: "Project"
+          Value: "solana-on-aws"
+    DeletionPolicy: Delete
+    Condition: AddDataDisc
+  DataEBSVolumeAttachment:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      InstanceId: !Ref EC2Instance1
+      VolumeId: !Ref DataEBSVolume
+      Device: /dev/sdb
+    Condition: AddDataDisc
+
+  AccountsEBSVolume:
+    Type: AWS::EC2::Volume
+    Properties:
+      VolumeType: !Ref 'AccountsDiscType'
+      Iops: "16000"
+      Throughput: 700
+      Size: 2000
+      Encrypted: true
+      AvailabilityZone: !GetAtt EC2Instance1.AvailabilityZone
+      Tags:
+        - Key: "Name"
+          Value: !Sub 
+            - '${InstanceName}-1-accounts' 
+            - InstanceName: !Ref 'InstanceName'
+        - Key: "Project"
+          Value: "solana-on-aws"
+    DeletionPolicy: Delete
+    Condition: AddAccountsDisc
+  AccountsEBSVolumeAttachment:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      InstanceId: !Ref EC2Instance1
+      VolumeId: !Ref AccountsEBSVolume
+      Device: /dev/sdb
+    Condition: AddAccountsDisc
+
+  EC2InstanceProfile:
     Type: "AWS::IAM::InstanceProfile"
     Properties: 
       Path: "/"
@@ -153,6 +190,9 @@ Resources:
         - "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
         - "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
         - "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+      Tags:
+        - Key: "Project"
+          Value: "solana-on-aws"
   EC2SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -177,6 +217,9 @@ Resources:
         FromPort: '8900'
         ToPort: '8900'
         CidrIp: !Ref CIDRAllowedAccessRPC
+      Tags:
+        - Key: "Project"
+          Value: "solana-on-aws"
   Dashboard:
       Type: "AWS::CloudWatch::Dashboard"
       Properties:
@@ -342,9 +385,9 @@ Resources:
                         "type": "metric",
                         "properties": {
                             "metrics": [
-                                [ { "expression": "m2/PERIOD(m2)", "label": "Read", "id": "e2", "period": 60, "region": "${AWS::Region}" } ],
+                                [ { "expression": "(m2/1048576)/PERIOD(m2)", "label": "Read", "id": "e2", "period": 60, "region": "${AWS::Region}" } ],
                                 [ "CWAgent", "diskio_read_bytes", "InstanceId", "${INSTANCE_ID}", "name", "nvme2n1", { "id": "m2", "stat": "Sum", "visible": false, "period": 60 } ],
-                                [ { "expression": "m3/PERIOD(m3)", "label": "Write", "id": "e3", "period": 60, "region": "${AWS::Region}" } ],
+                                [ { "expression": "(m3/1048576)/PERIOD(m3)", "label": "Write", "id": "e3", "period": 60, "region": "${AWS::Region}" } ],
                                 [ "CWAgent", "diskio_write_bytes", "InstanceId", "${INSTANCE_ID}", "name", "nvme2n1", { "id": "m3", "stat": "Sum", "visible": false, "period": 60 } ]
                             ],
                             "view": "timeSeries",
@@ -352,7 +395,7 @@ Resources:
                             "region": "${AWS::Region}",
                             "stat": "Average",
                             "period": 60,
-                            "title": "nvme2n1 Volume Read/Write throughput (bytes/sec)"
+                            "title": "nvme2n1 Volume Read/Write throughput (MiB/sec)"
                         }
                     },
                     {
@@ -458,9 +501,9 @@ Resources:
                         "type": "metric",
                         "properties": {
                             "metrics": [
-                                [ { "expression": "m2/PERIOD(m2)", "label": "Read", "id": "e2", "period": 60, "region": "${AWS::Region}" } ],
+                                [ { "expression": "(m2/1048576)/PERIOD(m2)", "label": "Read", "id": "e2", "period": 60, "region": "${AWS::Region}" } ],
                                 [ "CWAgent", "diskio_read_bytes", "InstanceId", "${INSTANCE_ID}", "name", "nvme1n1", { "id": "m2", "stat": "Sum", "visible": false, "period": 60 } ],
-                                [ { "expression": "m3/PERIOD(m3)", "label": "Write", "id": "e3", "period": 60, "region": "${AWS::Region}" } ],
+                                [ { "expression": "(m3/1048576)/PERIOD(m3)", "label": "Write", "id": "e3", "period": 60, "region": "${AWS::Region}" } ],
                                 [ "CWAgent", "diskio_write_bytes", "InstanceId", "${INSTANCE_ID}", "name", "nvme1n1", { "id": "m3", "stat": "Sum", "visible": false, "period": 60 } ]
                             ],
                             "view": "timeSeries",
@@ -468,7 +511,7 @@ Resources:
                             "region": "${AWS::Region}",
                             "stat": "Average",
                             "period": 60,
-                            "title": "nvme1n1 Volume Read/Write throughput (bytes/sec)"
+                            "title": "nvme1n1 Volume Read/Write throughput (MiB/sec)"
                         }
                     }
                   ]
