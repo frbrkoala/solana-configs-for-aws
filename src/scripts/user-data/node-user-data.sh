@@ -181,7 +181,7 @@ export RUST_BACKTRACE=full
 --require-tower \
 --no-wait-for-vote-to-start-leader \
 --limit-ledger-size 50000000 \
---account-index spl-token-owner \
+--account-index spl-token-mint \
 --account-index-exclude-key kinXdEcpDQeHPEuQnqmUgtYykqKGVFq6CeVX5iAHJq6 \
 --account-index-exclude-key TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA \
 --accounts /var/solana/accounts \

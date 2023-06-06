@@ -52,7 +52,7 @@ Conditions:
   AddDataDisc: !Not [!Equals [!Ref DataDiscType, "none"]]
   AddAccountsDisc: !Not [!Equals [!Ref AccountsDiscType, "none"]]
 Resources:
-  EC2Instance:
+  EC2Instance1:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: !Ref 'InstanceType'
@@ -72,10 +72,7 @@ Resources:
             sudo bash -c 'echo "DISC_TYPE=${DISC_TYPE}" >> /etc/environment'
             sudo bash -c 'echo "NODE_IDENTITY_SECRET_ARN=${NODE_IDENTITY_SECRET_ARN}" >> /etc/environment'
             sudo bash -c 'echo "SOLANA_NODE_TYPE=${SOLANA_NODE_TYPE}" >> /etc/environment'
-            export SOLANA_VERSION
-            export DISC_TYPE
-            export NODE_IDENTITY_SECRET_ARN
-            export SOLANA_NODE_TYPE
+            sudo source /etc/environment
 
             sudo apt-get -yqq update
             sudo apt-get -yqq install awscli jq
@@ -85,7 +82,7 @@ Resources:
             sudo cp ./node-user-data.sh /opt/user-data.sh
 
             sudo chmod +x /opt/user-data.sh
-            # sudo /opt/user-data.sh
+            sudo /opt/user-data.sh
           - SOLANA_VERSION: !Ref SolanaVersion
             DISC_TYPE: !Ref DataDiscType
             NODE_IDENTITY_SECRET_ARN: !Ref SolanaNodeIdentitySecretARN
@@ -115,7 +112,9 @@ Resources:
         - !Ref "AWS::NoValue"
       Tags: 
         - Key: "Name"
-          Value: !Ref 'InstanceName'
+          Value: !Sub 
+            - '${InstanceName}-1' 
+            - InstanceName: !Ref 'InstanceName'
   EC2InstanceProfile: 
     Type: "AWS::IAM::InstanceProfile"
     Properties: 
@@ -165,6 +164,304 @@ Resources:
         FromPort: '8900'
         ToPort: '8900'
         CidrIp: 172.16.0.0/12
+  Dashboard:
+      Type: "AWS::CloudWatch::Dashboard"
+      Properties:
+          DashboardName: !Ref DashboardName
+          DashboardBody: !Sub 
+            - |
+              {
+                "widgets": [
+                    {
+                        "height": 5,
+                        "width": 6,
+                        "y": 0,
+                        "x": 0,
+                        "type": "metric",
+                        "properties": {
+                            "view": "timeSeries",
+                            "stat": "Average",
+                            "period": 300,
+                            "stacked": false,
+                            "yAxis": {
+                                "left": {
+                                    "min": 0
+                                }
+                            },
+                            "region": "us-east-2",
+                            "metrics": [
+                                [ "AWS/EC2", "CPUUtilization", "InstanceId", "${INSTANCE_ID}", { "label": "${INSTANCE_ID}-${INSTANCE_NAME}" } ]
+                            ],
+                            "title": "CPU utilization (%)"
+                        }
+                    },
+                    {
+                        "height": 3,
+                        "width": 6,
+                        "y": 8,
+                        "x": 18,
+                        "type": "metric",
+                        "properties": {
+                            "view": "timeSeries",
+                            "stat": "Average",
+                            "period": 300,
+                            "stacked": false,
+                            "yAxis": {
+                                "left": {
+                                    "min": 0
+                                }
+                            },
+                            "region": "us-east-2",
+                            "metrics": [
+                                [ "AWS/EC2", "NetworkIn", "InstanceId", "${INSTANCE_ID}", { "label": "${INSTANCE_ID}-${INSTANCE_NAME}" } ]
+                            ],
+                            "title": "Network in (bytes)"
+                        }
+                    },
+                    {
+                        "height": 4,
+                        "width": 6,
+                        "y": 11,
+                        "x": 18,
+                        "type": "metric",
+                        "properties": {
+                            "view": "timeSeries",
+                            "stat": "Average",
+                            "period": 300,
+                            "stacked": false,
+                            "yAxis": {
+                                "left": {
+                                    "min": 0
+                                }
+                            },
+                            "region": "us-east-2",
+                            "metrics": [
+                                [ "AWS/EC2", "NetworkOut", "InstanceId", "${INSTANCE_ID}", { "label": "${INSTANCE_ID}-${INSTANCE_NAME}" } ]
+                            ],
+                            "title": "Network out (bytes)"
+                        }
+                    },
+                    {
+                        "height": 5,
+                        "width": 6,
+                        "y": 10,
+                        "x": 0,
+                        "type": "metric",
+                        "properties": {
+                            "view": "timeSeries",
+                            "stacked": false,
+                            "region": "us-east-2",
+                            "stat": "Average",
+                            "period": 300,
+                            "metrics": [
+                                [ "CWAgent", "mem_used_percent", "InstanceId", "${INSTANCE_ID}", { "label": "${INSTANCE_ID}-${INSTANCE_NAME}" } ]
+                            ],
+                            "title": "Mem Used (%)"
+                        }
+                    },
+                    {
+                        "height": 5,
+                        "width": 6,
+                        "y": 5,
+                        "x": 0,
+                        "type": "metric",
+                        "properties": {
+                            "view": "timeSeries",
+                            "stacked": false,
+                            "region": "us-east-2",
+                            "stat": "Average",
+                            "period": 300,
+                            "metrics": [
+                                [ "CWAgent", "cpu_usage_iowait", "InstanceId", "${INSTANCE_ID}", { "label": "${INSTANCE_ID}-${INSTANCE_NAME}" } ]
+                            ],
+                            "title": "CPU Usage IO wait (%)"
+                        }
+                    },
+                    {
+                        "height": 5,
+                        "width": 6,
+                        "y": 0,
+                        "x": 6,
+                        "type": "metric",
+                        "properties": {
+                            "metrics": [
+                                [ { "expression": "m7/PERIOD(m7)", "label": "Read", "id": "e7" } ],
+                                [ "CWAgent", "diskio_reads", "InstanceId", "${INSTANCE_ID}", "name", "nvme1n1", { "id": "m7", "visible": false, "stat": "Sum", "period": 60 } ],
+                                [ { "expression": "m8/PERIOD(m8)", "label": "Write", "id": "e8" } ],
+                                [ "CWAgent", "diskio_writes", "InstanceId", "${INSTANCE_ID}", "name", "nvme1n1", { "id": "m8", "visible": false, "stat": "Sum", "period": 60 } ]
+                            ],
+                            "view": "timeSeries",
+                            "stacked": false,
+                            "region": "us-east-2",
+                            "stat": "Sum",
+                            "period": 60,
+                            "title": "nvme1n1 Volume Read/Write (IO/sec)"
+                        }
+                    },
+                    {
+                        "height": 5,
+                        "width": 6,
+                        "y": 0,
+                        "x": 12,
+                        "type": "metric",
+                        "properties": {
+                            "metrics": [
+                                [ { "expression": "m7/PERIOD(m7)", "label": "Write", "id": "e7", "region": "us-east-2" } ],
+                                [ "CWAgent", "diskio_writes", "InstanceId", "${INSTANCE_ID}", "name", "nvme2n1", { "id": "m7", "visible": false, "stat": "Sum", "period": 60 } ],
+                                [ { "expression": "m8/PERIOD(m8)", "label": "Read", "id": "e8", "region": "us-east-2" } ],
+                                [ "CWAgent", "diskio_reads", "InstanceId", "${INSTANCE_ID}", "name", "nvme2n1", { "id": "m8", "visible": false, "stat": "Sum", "period": 60 } ]
+                            ],
+                            "view": "timeSeries",
+                            "stacked": false,
+                            "region": "us-east-2",
+                            "stat": "Average",
+                            "period": 300,
+                            "title": "nvme2n1 Volume Read/Write (IO/sec)"
+                        }
+                    },
+                    {
+                        "height": 5,
+                        "width": 6,
+                        "y": 10,
+                        "x": 12,
+                        "type": "metric",
+                        "properties": {
+                            "metrics": [
+                                [ { "expression": "m2/PERIOD(m2)", "label": "Read", "id": "e2", "period": 60, "region": "us-east-2" } ],
+                                [ "CWAgent", "diskio_read_bytes", "InstanceId", "${INSTANCE_ID}", "name", "nvme2n1", { "id": "m2", "stat": "Sum", "visible": false, "period": 60 } ],
+                                [ { "expression": "m3/PERIOD(m3)", "label": "Write", "id": "e3", "period": 60, "region": "us-east-2" } ],
+                                [ "CWAgent", "diskio_write_bytes", "InstanceId", "${INSTANCE_ID}", "name", "nvme2n1", { "id": "m3", "stat": "Sum", "visible": false, "period": 60 } ]
+                            ],
+                            "view": "timeSeries",
+                            "stacked": false,
+                            "region": "us-east-2",
+                            "stat": "Average",
+                            "period": 60,
+                            "title": "nvme2n1 Volume Read/Write throughput (bytes/sec)"
+                        }
+                    },
+                    {
+                        "height": 4,
+                        "width": 6,
+                        "y": 0,
+                        "x": 18,
+                        "type": "metric",
+                        "properties": {
+                            "metrics": [
+                                [ "CWAgent", "solana_block_height", "InstanceId", "${INSTANCE_ID}", { "label": "${INSTANCE_ID}-${INSTANCE_NAME}" } ]
+                            ],
+                            "sparkline": true,
+                            "view": "timeSeries",
+                            "stacked": false,
+                            "region": "us-east-2",
+                            "stat": "Maximum",
+                            "period": 60,
+                            "title": "Solana Block Height"
+                        }
+                    },
+                    {
+                        "height": 4,
+                        "width": 6,
+                        "y": 4,
+                        "x": 18,
+                        "type": "metric",
+                        "properties": {
+                            "sparkline": true,
+                            "view": "timeSeries",
+                            "stacked": false,
+                            "region": "us-east-2",
+                            "stat": "Maximum",
+                            "period": 60,
+                            "metrics": [
+                                [ "CWAgent", "solana_slots_behind", "InstanceId", "${INSTANCE_ID}", { "label": "${INSTANCE_ID}-${INSTANCE_NAME}" } ]
+                            ],
+                            "title": "Solana Slots Behind"
+                        }
+                    },
+                    {
+                        "height": 5,
+                        "width": 6,
+                        "y": 5,
+                        "x": 12,
+                        "type": "metric",
+                        "properties": {
+                            "view": "timeSeries",
+                            "stat": "Sum",
+                            "period": 60,
+                            "stacked": false,
+                            "sparkline": true,
+                            "yAxis": {
+                                "left": {
+                                    "min": 0
+                                }
+                            },
+                            "region": "us-east-2",
+                            "metrics": [
+                                [ { "expression": "IF(m7_2 !=0, (m7_1 / m7_2), 0)", "label": "Read", "id": "e7" } ],
+                                [ "CWAgent", "diskio_read_time", "InstanceId", "${INSTANCE_ID}", "name", "nvme2n1", { "id": "m7_1", "visible": false, "stat": "Sum", "period": 60 } ],
+                                [ "CWAgent", "diskio_reads", "InstanceId", "${INSTANCE_ID}", "name", "nvme2n1", { "id": "m7_2", "visible": false, "stat": "Sum", "period": 60 } ],
+                                [ { "expression": "IF(m7_4 !=0, (m7_3 / m7_4), 0)", "label": "Write", "id": "e8" } ],
+                                [ "CWAgent", "diskio_write_time", "InstanceId", "${INSTANCE_ID}", "name", "nvme2n1", { "id": "m7_3", "visible": false, "stat": "Sum", "period": 60 } ],
+                                [ "CWAgent", "diskio_writes", "InstanceId", "${INSTANCE_ID}", "name", "nvme2n1", { "id": "m7_4", "visible": false, "stat": "Sum", "period": 60 } ]
+                            ],
+                            "title": "nvme2n1 Volume Read/Write latency (ms/op)"
+                        }
+                    },
+                    {
+                        "height": 5,
+                        "width": 6,
+                        "y": 5,
+                        "x": 6,
+                        "type": "metric",
+                        "properties": {
+                            "view": "timeSeries",
+                            "stat": "Sum",
+                            "period": 60,
+                            "stacked": false,
+                            "yAxis": {
+                                "left": {
+                                    "min": 0
+                                }
+                            },
+                            "region": "us-east-2",
+                            "metrics": [
+                                [ { "expression": "IF(m7_2 !=0, (m7_1 / m7_2), 0)", "label": "Read", "id": "e7" } ],
+                                [ "CWAgent", "diskio_read_time", "InstanceId", "${INSTANCE_ID}", "name", "nvme1n1", { "id": "m7_1", "visible": false, "stat": "Sum", "period": 60 } ],
+                                [ "CWAgent", "diskio_reads", "InstanceId", "${INSTANCE_ID}", "name", "nvme1n1", { "id": "m7_2", "visible": false, "stat": "Sum", "period": 60 } ],
+                                [ { "expression": "IF(m7_4 !=0, (m7_3 / m7_4), 0)", "label": "Write", "id": "e8" } ],
+                                [ "CWAgent", "diskio_write_time", "InstanceId", "${INSTANCE_ID}", "name", "nvme1n1", { "id": "m7_3", "visible": false, "stat": "Sum", "period": 60 } ],
+                                [ "CWAgent", "diskio_writes", "InstanceId", "${INSTANCE_ID}", "name", "nvme1n1", { "id": "m7_4", "visible": false, "stat": "Sum", "period": 60 } ]
+                            ],
+                            "title": "nvme1n1 Volume Read/Write latency (ms/op)"
+                        }
+                    },
+                    {
+                        "height": 5,
+                        "width": 6,
+                        "y": 10,
+                        "x": 6,
+                        "type": "metric",
+                        "properties": {
+                            "metrics": [
+                                [ { "expression": "m2/PERIOD(m2)", "label": "Read", "id": "e2", "period": 60, "region": "us-east-2" } ],
+                                [ "CWAgent", "diskio_read_bytes", "InstanceId", "${INSTANCE_ID}", "name", "nvme1n1", { "id": "m2", "stat": "Sum", "visible": false, "period": 60 } ],
+                                [ { "expression": "m3/PERIOD(m3)", "label": "Write", "id": "e3", "period": 60, "region": "us-east-2" } ],
+                                [ "CWAgent", "diskio_write_bytes", "InstanceId", "${INSTANCE_ID}", "name", "nvme1n1", { "id": "m3", "stat": "Sum", "visible": false, "period": 60 } ]
+                            ],
+                            "view": "timeSeries",
+                            "stacked": false,
+                            "region": "us-east-2",
+                            "stat": "Average",
+                            "period": 60,
+                            "title": "nvme1n1 Volume Read/Write throughput (bytes/sec)"
+                        }
+                    }
+                  ]
+              }
+            - INSTANCE_ID: !Ref EC2Instance1
+              INSTANCE_NAME:  !Sub 
+                - '${InstanceName}-1' 
+                - InstanceName: !Ref 'InstanceName'
 Outputs:
   Instance:
     Value: !GetAtt [EC2Instance, PublicDnsName]
