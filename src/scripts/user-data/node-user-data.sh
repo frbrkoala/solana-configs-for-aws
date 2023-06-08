@@ -283,6 +283,56 @@ export RUST_BACKTRACE=full
 EOF'
 fi
 
+if [[ "$SOLANA_NODE_TYPE" == "heavyrpc" ]]; then
+sudo bash -c 'cat > validator.sh <<EOF
+#!/bin/bash
+set -o errexit
+set -o nounset
+set -o pipefail
+# Remove empty snapshots
+find "/var/solana/data/ledger" -name "snapshot-*" -size 0 -print -exec rm {} \; || true
+export RUST_LOG=warning
+export RUST_BACKTRACE=full
+/home/solana/bin/solana-validator \
+--ledger /var/solana/data/ledger \
+--identity /home/solana/config/validator-keypair.json \
+--known-validator 7Np41oeYqPefeNQEHSv1UDhYrehxin3NStELsSKCT4K2 \
+--known-validator GdnSyH3YtwcxFvQrVVJMm1JhTS4QVX7MFsX56uJLUfiZ \
+--known-validator DE1bawNcRJB9rVm3buyMVfr8mBEoyyu73NBovf2oXJsJ \
+--known-validator CakcnaRDHka2gXyfbEd2d3xsvkJkqsLw2akB3zsN1D2S \
+--expected-genesis-hash 5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d \
+--entrypoint entrypoint.mainnet-beta.solana.com:8001 \
+--entrypoint entrypoint2.mainnet-beta.solana.com:8001 \
+--entrypoint entrypoint3.mainnet-beta.solana.com:8001 \
+--entrypoint entrypoint4.mainnet-beta.solana.com:8001 \
+--entrypoint entrypoint5.mainnet-beta.solana.com:8001 \
+--no-voting \
+--snapshot-interval-slots 500 \
+--maximum-local-snapshot-age 500 \
+--full-rpc-api \
+--rpc-port 8899 \
+--gossip-port 8801 \
+--dynamic-port-range 8800-8813 \
+--no-port-check \
+--wal-recovery-mode skip_any_corrupted_record \
+--enable-rpc-transaction-history \
+--enable-cpi-and-log-storage \
+--init-complete-file /var/solana/data/init-completed \
+--snapshot-compression none \
+--require-tower \
+--no-wait-for-vote-to-start-leader \
+--limit-ledger-size 50000000 \
+--accounts /var/solana/accounts \
+--no-os-cpu-stats-reporting \
+--no-os-memory-stats-reporting \
+--no-os-network-stats-reporting \
+--account-index program-id spl-token-owner spl-token-mint \
+--account-index-exclude-key kinXdEcpDQeHPEuQnqmUgtYykqKGVFq6CeVX5iAHJq6 \
+--account-index-exclude-key TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA \
+--log -
+EOF'
+fi
+
 sudo chmod +x validator.sh
 
 echo "Making sure the solana user has access to everything needed"
