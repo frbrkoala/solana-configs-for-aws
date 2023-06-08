@@ -3,6 +3,7 @@ set +e
 
 export AWS_REGION=`curl http://169.254.169.254/latest/dynamic/instance-identity/document|grep region|awk -F\" '{print $4}'`
 
+echo "CF_STACK_NAME="$CF_STACK_NAME
 echo "DISC_TYPE="$$DISC_TYPE
 echo "SOLANA_VERSION="$SOLANA_VERSION
 echo "SOLANA_NODE_TYPE="$SOLANA_NODE_TYPE
@@ -151,7 +152,7 @@ if [[ $NODE_IDENTITY_SECRET_ARN == "none" ]]; then
     sudo ./solana-keygen new --no-passphrase -o /home/solana/config/validator-keypair.json
     NODE_IDENTITY=$(sudo ./solana-keygen pubkey /home/solana/config/validator-keypair.json)
     echo "Backing up node identity to AWS Secrets Manager"
-    sudo aws secretsmanager create-secret --name "solana-node/"$NODE_IDENTITY --description "Solana Node identity" --secret-string file:///home/solana/config/validator-keypair.json --region $AWS_REGION
+    sudo aws secretsmanager create-secret --name "solana-node/"$NODE_IDENTITY --description "Solana Node Identity Secret created for stack $CF_STACK_NAME" --secret-string file:///home/solana/config/validator-keypair.json --region $AWS_REGION
 else
     echo "Retrieving node identity from AWS Secrets Manager"
     sudo aws secretsmanager get-secret-value --secret-id $NODE_IDENTITY_SECRET_ARN --query SecretString --output text --region $AWS_REGION > ~/validator-keypair.json
@@ -164,14 +165,14 @@ if [[ "$SOLANA_NODE_TYPE" == "validator" ]]; then
         sudo ./solana-keygen new --no-passphrase -o /home/solana/config/vote-account-keypair.json
         NODE_IDENTITY=$(sudo ./solana-keygen pubkey /home/solana/config/vote-account-keypair.json)
         echo "Backing up Vote Account Secret to AWS Secrets Manager"
-        sudo aws secretsmanager create-secret --name "solana-node/"$NODE_IDENTITY --description "Solana Vote Account Secret" --secret-string file:///home/solana/config/vote-account-keypair.json --region $AWS_REGION
+        sudo aws secretsmanager create-secret --name "solana-node/"$NODE_IDENTITY --description "Solana Vote Account Secret created for stack $CF_STACK_NAME" --secret-string file:///home/solana/config/vote-account-keypair.json --region $AWS_REGION
 
         if [[ $AUTHORIZED_WITHDRAWER_ACCOUNT_SECRET_ARN == "none" ]]; then
             echo "Create Authorized Withdrawer Account Secret"
             sudo ./solana-keygen new --no-passphrase -o /home/solana/config/authorized-withdrawer-keypair.json
             NODE_IDENTITY=$(sudo ./solana-keygen pubkey /home/solana/config/authorized-withdrawer-keypair.json)
             echo "Backing up Authorized Withdrawer Account  to AWS Secrets Manager"
-            sudo aws secretsmanager create-secret --name "solana-node/"$NODE_IDENTITY --description "Solana Vote Account Secret" --secret-string file:///home/solana/config/authorized-withdrawer-keypair.json --region $AWS_REGION
+            sudo aws secretsmanager create-secret --name "solana-node/"$NODE_IDENTITY --description "Authorized Withdrawer Account Secret created for stack $CF_STACK_NAME" --secret-string file:///home/solana/config/authorized-withdrawer-keypair.json --region $AWS_REGION
 
         else
             echo "Retrieving Authorized Withdrawer Account Secret from AWS Secrets Manager"
