@@ -172,18 +172,28 @@ if [[ "$SOLANA_NODE_TYPE" == "validator" ]]; then
             NODE_IDENTITY=$(sudo ./solana-keygen pubkey /home/solana/config/authorized-withdrawer-keypair.json)
             echo "Backing up Authorized Withdrawer Account  to AWS Secrets Manager"
             sudo aws secretsmanager create-secret --name "solana-node/"$NODE_IDENTITY --description "Solana Vote Account Secret" --secret-string file:///home/solana/config/authorized-withdrawer-keypair.json --region $AWS_REGION
+
         else
             echo "Retrieving Authorized Withdrawer Account Secret from AWS Secrets Manager"
-            sudo aws secretsmanager get-secret-value --secret-id $VOTE_ACCOUNT_SECRET_ARN --query SecretString --output text --region $AWS_REGION > ~/authorized-withdrawer-keypair.json
+            sudo aws secretsmanager get-secret-value --secret-id $AUTHORIZED_WITHDRAWER_ACCOUNT_SECRET_ARN --query SecretString --output text --region $AWS_REGION > ~/authorized-withdrawer-keypair.json
             sudo mv ~/authorized-withdrawer-keypair.json /home/solana/config/authorized-withdrawer-keypair.json
-            rm ~/authorized-withdrawer-keypair.json
         fi
 
-        echo "Creating Vote Account on-chain"
-        solana create-vote-account /home/solana/config/vote-account-keypair.json /home/solana/config/validator-keypair.json /home/solana/config/authorized-withdrawer-keypair.json
+        if [[ $REGISTRATION_TRANSACTION_FUNDING_ACCOUNT_SECRET_ARN != "none" ]]; then
+          echo "Retrieving Registration Transaction Funding Account Secret from AWS Secrets Manager"
+          sudo aws secretsmanager get-secret-value --secret-id $REGISTRATION_TRANSACTION_FUNDING_ACCOUNT_SECRET_ARN --query SecretString --output text --region $AWS_REGION > ~/id.json
+          sudo mv ~/id.json /home/solana/.config/solana/id.json
+          echo "Creating Vote Account on-chain"
+          sudo ./solana create-vote-account /home/solana/config/vote-account-keypair.json /home/solana/config/validator-keypair.json /home/solana/config/authorized-withdrawer-keypair.json
+          
+          echo "Deleting Transaction Funding Account Secret from the local disc"
+          sudo rm /home/solana/.config/solana/id.json
+        else
+          echo "Vote Account not created. Please create it manually: https://docs.solana.com/running-validator/validator-start#create-vote-account"
+        fi
 
         echo "Deleting Authorized Withdrawer Account from the local disc"
-        rm /home/solana/config/authorized-withdrawer-keypair.json
+        sudo rm /home/solana/config/authorized-withdrawer-keypair.json
     else
         echo "Retrieving Vote Account Secret from AWS Secrets Manager"
         sudo aws secretsmanager get-secret-value --secret-id $VOTE_ACCOUNT_SECRET_ARN --query SecretString --output text --region $AWS_REGION > ~/vote-account-keypair.json

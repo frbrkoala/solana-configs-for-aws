@@ -14,7 +14,10 @@ set +e
 # Check open ports
 # sudo lsof -i -P -n | grep LISTEN
 
-# Clean up
+# Get logs from initialization scrips (user-data)
+# sudo cat /var/log/cloud-init-output.log
+
+# Clean up data
 
 # sudo rm -f /var/solana/data/init-completed
 # sudo rm -rf /var/solana/data/ledger/*

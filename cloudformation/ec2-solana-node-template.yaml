@@ -12,10 +12,6 @@ Parameters:
     Type:  String
     Default: 'ami-0568936c8d2b91c4e' # Ubuntu, 20.04 LTS, amd64 focal image build on 2023-02-07
     Description: "In other regions, search for Ubuntu, 20.04 LTS, amd64 focal image build on 2023-02-07"
-  InstanceName:
-    Description: "Name of the instance. Must contain only alphanumeric characters and/or the following: +=,.@_-"
-    Type: String
-    Default: solana-node
   DataDiscType:
     Description: "Set EBS type for to store state data (gp3, io2) or set to (none) for instnace store instances like i4i."
     Type: String
@@ -60,6 +56,10 @@ Parameters:
     Description: "Optional for validator node type. The ARN of the secret in AWS Secrets Manager with the Authorized Withdrawer Account's key pair."
     Type: String
     Default: "none"
+  RegistrationTransactionFudingAccountSecretARN:
+    Description: "Required for validator node type. The ARN of the secret in AWS Secrets Manager with Registration Transaction Funding Account's key pair. Needs to have sufficient SOL to pay for on-chain validator creation transaction. If not present, the node provisioning script assumes the on-chain validator creation transaction was issued elsewhere and will skip it."
+    Type: String
+    Default: "none"
 Conditions:
   AddDataDisc: !Not [!Equals [!Ref DataDiscType, "none"]]
   AddAccountsDisc: !Not [!Equals [!Ref AccountsDiscType, "none"]]
@@ -87,6 +87,7 @@ Resources:
             sudo bash -c 'echo "NODE_IDENTITY_SECRET_ARN=${NODE_IDENTITY_SECRET_ARN}" >> /etc/environment'
             sudo bash -c 'echo "VOTE_ACCOUNT_SECRET_ARN=${VOTE_ACCOUNT_SECRET_ARN}" >> /etc/environment'
             sudo bash -c 'echo "AUTHORIZED_WITHDRAWER_ACCOUNT_SECRET_ARN=${AUTHORIZED_WITHDRAWER_ACCOUNT_SECRET_ARN}" >> /etc/environment'
+            sudo bash -c 'echo "REGISTRATION_TRANSACTION_FUNDING_ACCOUNT_SECRET_ARN=${REGISTRATION_TRANSACTION_FUNDING_ACCOUNT_SECRET_ARN}" >> /etc/environment'
             sudo source /etc/environment
 
             sudo apt-get -yqq update
@@ -104,6 +105,7 @@ Resources:
             NODE_IDENTITY_SECRET_ARN: !Ref SolanaNodeIdentitySecretARN
             VOTE_ACCOUNT_SECRET_ARN: !Ref VoteAccountSecretARN
             AUTHORIZED_WITHDRAWER_ACCOUNT_SECRET_ARN: !Ref AuthorizedWithdrawerAccountSecretARN
+            REGISTRATION_TRANSACTION_FUNDING_ACCOUNT_SECRET_ARN: !Ref RegistrationTransactionFudingAccountSecretARN
       BlockDeviceMappings:
       - DeviceName: /dev/sda1
         Ebs:
@@ -111,9 +113,7 @@ Resources:
           VolumeSize: 400
       Tags: 
         - Key: "Name"
-          Value: !Sub 
-            - '${InstanceName}-1' 
-            - InstanceName: !Ref 'InstanceName'
+          Value: !Ref AWS::StackName
         - Key: "Project"
           Value: "solana-on-aws"
 
@@ -128,9 +128,7 @@ Resources:
       AvailabilityZone: !GetAtt EC2Instance1.AvailabilityZone
       Tags:
         - Key: "Name"
-          Value: !Sub 
-            - '${InstanceName}-1-data' 
-            - InstanceName: !Ref 'InstanceName'
+          Value: !Sub '${AWS::StackName}-data'
         - Key: "Project"
           Value: "solana-on-aws"
     DeletionPolicy: Delete
@@ -154,9 +152,7 @@ Resources:
       AvailabilityZone: !GetAtt EC2Instance1.AvailabilityZone
       Tags:
         - Key: "Name"
-          Value: !Sub 
-            - '${InstanceName}-1-accounts' 
-            - InstanceName: !Ref 'InstanceName'
+          Value: !Sub '${AWS::StackName}-accounts'
         - Key: "Project"
           Value: "solana-on-aws"
     DeletionPolicy: Delete
@@ -179,7 +175,7 @@ Resources:
   EC2Role:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: !Ref 'InstanceName'
+      RoleName: !Ref AWS::StackName
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -227,9 +223,7 @@ Resources:
   Dashboard:
       Type: "AWS::CloudWatch::Dashboard"
       Properties:
-          DashboardName: !Sub 
-                - '${InstanceName}-1' 
-                - InstanceName: !Ref 'InstanceName'
+          DashboardName: !Ref AWS::StackName
           DashboardBody: !Sub 
             - |
               {
@@ -521,9 +515,7 @@ Resources:
                   ]
               }
             - INSTANCE_ID: !Ref EC2Instance1
-              INSTANCE_NAME:  !Sub 
-                - '${InstanceName}-1' 
-                - InstanceName: !Ref 'InstanceName'
+              INSTANCE_NAME:  !Ref AWS::StackName
 Outputs:
   Instance:
     Value: !GetAtt [EC2Instance1, PublicDnsName]
