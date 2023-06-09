@@ -10,4 +10,4 @@
 ## Claning up
 
 1. The web console of your AWS account, navigate to CloudFormation home page. Find the Cloudformation stack created, select it and click "Delete". This will delete all created resources, except secrets in the AWS Secrets Manager.
-2. Go to the AWS Secrets Manager and look at description to find a secret for the name of CloudFormation stack with deleted Node Identity. Optinally you can also remove other secrets with Solana Vote Account, Solana Withrdawal Account and Registration Transaction Funding account.
+2. Go to the AWS Secrets Manager and look at description to find a secret for the name of CloudFormation stack with deleted Node Identity. Optinally you can also remove other secrets with Solana Vote Account, Solana Withrdawal Account and Registration Tranasaction Funding account.

@@ -10,6 +10,7 @@ echo "SOLANA_NODE_TYPE="$SOLANA_NODE_TYPE
 echo "NODE_IDENTITY_SECRET_ARN="$NODE_IDENTITY_SECRET_ARN
 echo "VOTE_ACCOUNT_SECRET_ARN="$VOTE_ACCOUNT_SECRET_ARN
 echo "AUTHORIZED_WITHDRAWER_ACCOUNT_SECRET_ARN="$AUTHORIZED_WITHDRAWER_ACCOUNT_SECRET_ARN
+echo "REGISTRATION_TRANSACTION_FUNDING_ACCOUNT_SECRET_ARN="$REGISTRATION_TRANSACTION_FUNDING_ACCOUNT_SECRET_ARN
 
 echo "Install and configure CloudWatch agent"
 wget -q https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
@@ -183,12 +184,13 @@ if [[ "$SOLANA_NODE_TYPE" == "validator" ]]; then
         if [[ $REGISTRATION_TRANSACTION_FUNDING_ACCOUNT_SECRET_ARN != "none" ]]; then
           echo "Retrieving Registration Transaction Funding Account Secret from AWS Secrets Manager"
           sudo aws secretsmanager get-secret-value --secret-id $REGISTRATION_TRANSACTION_FUNDING_ACCOUNT_SECRET_ARN --query SecretString --output text --region $AWS_REGION > ~/id.json
-          sudo mv ~/id.json /home/solana/.config/solana/id.json
+          sudo mkdir -p /root/.config/solana
+          sudo mv ~/id.json /root/.config/solana/id.json
           echo "Creating Vote Account on-chain"
           sudo ./solana create-vote-account /home/solana/config/vote-account-keypair.json /home/solana/config/validator-keypair.json /home/solana/config/authorized-withdrawer-keypair.json
           
           echo "Deleting Transaction Funding Account Secret from the local disc"
-          sudo rm /home/solana/.config/solana/id.json
+          sudo rm  /root/.config/solana/id.json
         else
           echo "Vote Account not created. Please create it manually: https://docs.solana.com/running-validator/validator-start#create-vote-account"
         fi
@@ -330,6 +332,8 @@ export RUST_BACKTRACE=full
 --account-index program-id spl-token-owner spl-token-mint \
 --account-index-exclude-key kinXdEcpDQeHPEuQnqmUgtYykqKGVFq6CeVX5iAHJq6 \
 --account-index-exclude-key TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA \
+--enable-accounts-disk-index
+--accounts-index-memory-limit-mb 250000
 --log -
 EOF'
 fi
