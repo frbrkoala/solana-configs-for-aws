@@ -1,6 +1,9 @@
 #!/bin/bash
 set +e
 
+# Check setup varibales
+# /etc/environment
+
 # Check status
 # sudo systemctl status sol
 

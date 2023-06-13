@@ -69,7 +69,6 @@ echo 'Preparing directories and file system for Solana installation'
 sudo mkdir /var/solana
 sudo mkdir /var/solana/data
 sudo mkdir /var/solana/accounts
-sudo mkdir /var/solana/data/ledger
 
 if [[ "$DISC_TYPE" == "none" ]]; then
   echo "Our disc type is instance store"
