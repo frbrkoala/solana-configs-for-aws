@@ -70,7 +70,7 @@ sudo mkdir /var/solana
 sudo mkdir /var/solana/data
 sudo mkdir /var/solana/accounts
 
-if [[ "$DISC_TYPE" == "none" ]]; then
+if [[ "$DISC_TYPE" == "instancestore" ]]; then
   echo "Our disc type is instance store"
 
 cd /opt
@@ -317,7 +317,7 @@ export RUST_BACKTRACE=full
 --account-index-exclude-key kinXdEcpDQeHPEuQnqmUgtYykqKGVFq6CeVX5iAHJq6 \
 --account-index-exclude-key TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA \
 --enable-accounts-disk-index
---accounts-index-memory-limit-mb 250000
+--accounts-index-memory-limit-mb 1000
 --log -
 EOF'
 fi

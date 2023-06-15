@@ -9,7 +9,7 @@ Parameters:
     Type: String
     Default: r6a.8xlarge
   Ec2AmiId:
-    Type:  String
+    Type: AWS::EC2::Image::Id
     Default: 'ami-0568936c8d2b91c4e' # Ubuntu, 20.04 LTS, amd64 focal image build on 2023-02-07
     Description: "In other regions, search for Ubuntu, 20.04 LTS, amd64 focal image build on 2023-02-07"
   DataDiscType:
@@ -18,7 +18,7 @@ Parameters:
     AllowedValues:
       - "io2"
       - "gp3"
-      - "none"
+      - "instancestore"
     Default: "gp3"
   CIDRAllowedAccessRPC:
     Description: "A CIDR block that is allowed to connect to the node's RPC ports."
@@ -30,7 +30,7 @@ Parameters:
     AllowedValues:
       - "io2"
       - "gp3"
-      - "none"
+      - "instancestore"
     Default: "gp3"
   SolanaVersion:
     Description: "The version of Solana to deploy. Select from here: https://github.com/solana-labs/solana/releases ."
@@ -63,7 +63,6 @@ Parameters:
 Conditions:
   AddDataDisc: !Not [!Equals [!Ref DataDiscType, "none"]]
   AddAccountsDisc: !Not [!Equals [!Ref AccountsDiscType, "none"]]
-  EnableRPCPorts: !Not [!Equals [!Ref SolanaNodeType, "none"]]
 Resources:
   EC2Instance1:
     Type: AWS::EC2::Instance
@@ -126,7 +125,7 @@ Resources:
       Iops: "16000"
       Throughput: 700
       Size: 2000
-      Encrypted: false
+      Encrypted: true
       AvailabilityZone: !GetAtt EC2Instance1.AvailabilityZone
       Tags:
         - Key: "Name"
@@ -150,7 +149,7 @@ Resources:
       Iops: "16000"
       Throughput: 700
       Size: 500
-      Encrypted: false
+      Encrypted: true
       AvailabilityZone: !GetAtt EC2Instance1.AvailabilityZone
       Tags:
         - Key: "Name"
@@ -177,7 +176,6 @@ Resources:
   EC2Role:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: !Ref AWS::StackName
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -199,6 +197,15 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Solana Blockchain Nodes Access
+      # SecurityGroupEgress:
+      # - IpProtocol: tcp
+      #   FromPort: 0
+      #   ToPort: 65535
+      #   CidrIp: 0.0.0.0/0
+      # - IpProtocol: udp
+      #   FromPort: 0
+      #   ToPort: 65535
+      #   CidrIp: 0.0.0.0/0
       SecurityGroupIngress:
       # UDP - P2P protocols (gossip, turbine, repair, etc)
       - IpProtocol: tcp
