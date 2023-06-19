@@ -313,11 +313,11 @@ export RUST_BACKTRACE=full
 --no-os-cpu-stats-reporting \
 --no-os-memory-stats-reporting \
 --no-os-network-stats-reporting \
---account-index program-id spl-token-owner spl-token-mint \
+--account-index spl-token-owner \
+--account-index program-id \
+--account-index spl-token-mint \
 --account-index-exclude-key kinXdEcpDQeHPEuQnqmUgtYykqKGVFq6CeVX5iAHJq6 \
 --account-index-exclude-key TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA \
---enable-accounts-disk-index
---accounts-index-memory-limit-mb 1000
 --log -
 EOF'
 fi
