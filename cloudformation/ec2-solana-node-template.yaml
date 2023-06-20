@@ -83,7 +83,8 @@ Resources:
             set +e
 
             sudo bash -c 'echo "CF_STACK_NAME=${CF_STACK_NAME}" >> /etc/environment'
-            sudo bash -c 'echo "DISC_TYPE=${DISC_TYPE}" >> /etc/environment'
+            sudo bash -c 'echo "ACCOUNTS_DISC_TYPE=${ACCOUNTS_DISC_TYPE}" >> /etc/environment'
+            sudo bash -c 'echo "DATA_DISC_TYPE=${DATA_DISC_TYPE}" >> /etc/environment'
             sudo bash -c 'echo "SOLANA_VERSION=${SOLANA_VERSION}" >> /etc/environment'
             sudo bash -c 'echo "SOLANA_NODE_TYPE=${SOLANA_NODE_TYPE}" >> /etc/environment'
             sudo bash -c 'echo "NODE_IDENTITY_SECRET_ARN=${NODE_IDENTITY_SECRET_ARN}" >> /etc/environment'
@@ -102,7 +103,8 @@ Resources:
             sudo chmod +x /opt/user-data.sh
             sudo /opt/user-data.sh
           - CF_STACK_NAME: !Ref AWS::StackName
-            DISC_TYPE: !Ref DataDiscType
+            ACCOUNTS_DISC_TYPE: !Ref AccountsDiscType
+            DATA_DISC_TYPE: !Ref DataDiscType
             SOLANA_VERSION: !Ref SolanaVersion
             SOLANA_NODE_TYPE: !Ref SolanaNodeType
             NODE_IDENTITY_SECRET_ARN: !Ref SolanaNodeIdentitySecretARN

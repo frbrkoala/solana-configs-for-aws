@@ -4,7 +4,8 @@ set +e
 export AWS_REGION=`curl http://169.254.169.254/latest/dynamic/instance-identity/document|grep region|awk -F\" '{print $4}'`
 
 echo "CF_STACK_NAME="$CF_STACK_NAME
-echo "DISC_TYPE="$$DISC_TYPE
+echo "ACCOUNTS_DISC_TYPE="$ACCOUNTS_DISC_TYPE
+echo "DATA_DISC_TYPE="$DATA_DISC_TYPE
 echo "SOLANA_VERSION="$SOLANA_VERSION
 echo "SOLANA_NODE_TYPE="$SOLANA_NODE_TYPE
 echo "NODE_IDENTITY_SECRET_ARN="$NODE_IDENTITY_SECRET_ARN
@@ -70,7 +71,7 @@ sudo mkdir /var/solana
 sudo mkdir /var/solana/data
 sudo mkdir /var/solana/accounts
 
-if [[ "$DISC_TYPE" == "instancestore" ]]; then
+if [[ "$DATA_DISC_TYPE" == "instancestore" ]]; then
   echo "Our disc type is instance store"
 
 cd /opt
@@ -86,7 +87,7 @@ sudo /opt/setup-instance-store-volumes.sh
 else
   echo "Our disc type is EBS"
 
-  # Our data disc for io2 is 2TB
+  # Our data disc is 2TB
   DATA_DISC_ID=/dev/$(lsblk -lnb | awk '{if ($4== 2147483648000) {print $1}}')
   sudo mkfs -t xfs $DATA_DISC_ID
   sleep 10
