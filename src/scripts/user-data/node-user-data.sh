@@ -72,22 +72,22 @@ sudo mkdir /var/solana/data
 sudo mkdir /var/solana/accounts
 
 if [[ "$DATA_DISC_TYPE" == "instancestore" ]]; then
-  echo "Our disc type is instance store"
+  echo "Data volume type is instance store"
 
-cd /opt
-sudo wget https://raw.githubusercontent.com/frbrkoala/solana-configs-for-aws/main/src/scripts/setup-instance-store-volumes.sh
+  cd /opt
+  sudo wget https://raw.githubusercontent.com/frbrkoala/solana-configs-for-aws/main/src/scripts/setup-instance-store-volumes.sh
 
-sudo chmod +x /opt/setup-instance-store-volumes.sh
+  sudo chmod +x /opt/setup-instance-store-volumes.sh
 
-(crontab -l; echo "@reboot /opt/setup-instance-store-volumes.sh >/tmp/setup-instance-store-volumes.log 2>&1") | crontab -
-crontab -l
+  (crontab -l; echo "@reboot /opt/setup-instance-store-volumes.sh >/tmp/setup-instance-store-volumes.log 2>&1") | crontab -
+  crontab -l
 
-sudo /opt/setup-instance-store-volumes.sh
+  sudo /opt/setup-instance-store-volumes.sh
 
 else
-  echo "Our disc type is EBS"
+  echo "Data volume type is EBS"
 
-  # Our data disc is 2TB
+  # Our data volume size is 2TB
   DATA_DISC_ID=/dev/$(lsblk -lnb | awk '{if ($4== 2147483648000) {print $1}}')
   sudo mkfs -t xfs $DATA_DISC_ID
   sleep 10
@@ -97,8 +97,29 @@ else
   echo "DATA_DISC_UUID="$DATA_DISC_UUID
   echo "DATA_DISC_FSTAB_CONF="$DATA_DISC_FSTAB_CONF
   echo $DATA_DISC_FSTAB_CONF | sudo tee -a /etc/fstab
+  sudo mount -a
 
-  # Our accounts disc for io2 is 500GB
+if [[ "$ACCOUNTS_DISC_TYPE" == "instancestore" ]]; then
+  echo "Accounts volume type is instance store"
+
+  if [[ "$DATA_DISC_TYPE" != "instancestore" ]]; then
+    cd /opt
+    sudo wget https://raw.githubusercontent.com/frbrkoala/solana-configs-for-aws/main/src/scripts/setup-instance-store-volumes.sh
+
+    sudo chmod +x /opt/setup-instance-store-volumes.sh
+
+    (crontab -l; echo "@reboot /opt/setup-instance-store-volumes.sh >/tmp/setup-instance-store-volumes.log 2>&1") | crontab -
+    crontab -l
+
+    sudo /opt/setup-instance-store-volumes.sh
+
+  else
+    echo "Data and Accounts volumes are instance stores and should be both configured by now"
+  fi
+
+else
+  echo "Accounts volume type is EBS"
+  # Our accounts volume size is 500GB
   ACCOUNTS_DISC_ID=/dev/$(lsblk -lnb | awk '{if ($4== 536870912000) {print $1}}')
   sudo mkfs -t xfs $ACCOUNTS_DISC_ID
   sleep 10
