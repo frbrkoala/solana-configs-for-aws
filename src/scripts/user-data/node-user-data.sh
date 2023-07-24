@@ -2,7 +2,7 @@
 set +e
 
 export AWS_REGION=`curl http://169.254.169.254/latest/dynamic/instance-identity/document|grep region|awk -F\" '{print $4}'`
-GIT_URL="https://raw.githubusercontent.com/frbrkoala/solana-configs-for-aws/main"
+export GIT_URL="https://raw.githubusercontent.com/frbrkoala/solana-configs-for-aws/main"
 
 echo "CF_STACK_NAME="$CF_STACK_NAME
 echo "ACCOUNTS_DISC_TYPE="$ACCOUNTS_DISC_TYPE
@@ -237,17 +237,17 @@ if [[ "$SOLANA_NODE_TYPE" == "validator" ]]; then
         sudo mv ~/vote-account-keypair.json /home/solana/config/vote-account-keypair.json
     fi
 
-sudo wget -q $GIT_URL/src/configs/node-validator-template.sh
+sudo wget -q $GIT_URL/src/scripts/node-validator-template.sh
 mv ./node-validator-template.sh /home/solana/bin/validator.sh
 fi
 
 if [[ "$SOLANA_NODE_TYPE" == "lightrpc" ]]; then
-  sudo wget -q $GIT_URL/src/configs/node-light-rpc-template.sh
+  sudo wget -q $GIT_URL/src/scripts/node-light-rpc-template.sh
   mv ./node-light-rpc-template.sh /home/solana/bin/validator.sh
 fi
 
 if [[ "$SOLANA_NODE_TYPE" == "heavyrpc" ]]; then
-  sudo wget -q $GIT_URL/src/configs/node-heavy-rpc-template.sh
+  sudo wget -q $GIT_URL/src/scripts/node-heavy-rpc-template.sh
   mv ./node-heavy-rpc-template.sh /home/solana/bin/validator.sh
 fi
 
