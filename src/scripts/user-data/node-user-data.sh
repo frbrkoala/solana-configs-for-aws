@@ -98,6 +98,7 @@ else
   echo "DATA_DISC_FSTAB_CONF="$DATA_DISC_FSTAB_CONF
   echo $DATA_DISC_FSTAB_CONF | sudo tee -a /etc/fstab
   sudo mount -a
+fi
 
 if [[ "$ACCOUNTS_DISC_TYPE" == "instancestore" ]]; then
   echo "Accounts volume type is instance store"
