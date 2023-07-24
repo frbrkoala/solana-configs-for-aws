@@ -2,6 +2,7 @@
 set +e
 
 export AWS_REGION=`curl http://169.254.169.254/latest/dynamic/instance-identity/document|grep region|awk -F\" '{print $4}'`
+GIT_URL="https://raw.githubusercontent.com/frbrkoala/solana-configs-for-aws/main"
 
 echo "CF_STACK_NAME="$CF_STACK_NAME
 echo "ACCOUNTS_DISC_TYPE="$ACCOUNTS_DISC_TYPE
@@ -12,12 +13,38 @@ echo "NODE_IDENTITY_SECRET_ARN="$NODE_IDENTITY_SECRET_ARN
 echo "VOTE_ACCOUNT_SECRET_ARN="$VOTE_ACCOUNT_SECRET_ARN
 echo "AUTHORIZED_WITHDRAWER_ACCOUNT_SECRET_ARN="$AUTHORIZED_WITHDRAWER_ACCOUNT_SECRET_ARN
 echo "REGISTRATION_TRANSACTION_FUNDING_ACCOUNT_SECRET_ARN="$REGISTRATION_TRANSACTION_FUNDING_ACCOUNT_SECRET_ARN
+echo "SOLANA_CLUSTER_ID="$SOLANA_CLUSTER_ID
+
+case $SOLANA_CLUSTER_ID in
+  "mainnet-beta")
+    ENTRY_POINTS=" --entrypoint entrypoint.mainnet-beta.solana.com:8001 --entrypoint entrypoint2.mainnet-beta.solana.com:8001 --entrypoint entrypoint3.mainnet-beta.solana.com:8001 --entrypoint entrypoint4.mainnet-beta.solana.com:8001 --entrypoint entrypoint5.mainnet-beta.solana.com:8001"
+    KNOWN_VALIDATORS=" --known-validator 7Np41oeYqPefeNQEHSv1UDhYrehxin3NStELsSKCT4K2 --known-validator GdnSyH3YtwcxFvQrVVJMm1JhTS4QVX7MFsX56uJLUfiZ --known-validator DE1bawNcRJB9rVm3buyMVfr8mBEoyyu73NBovf2oXJsJ --known-validator CakcnaRDHka2gXyfbEd2d3xsvkJkqsLw2akB3zsN1D2S"
+    SOLANA_METRICS_CONFIG="host=https://metrics.solana.com:8086,db=mainnet-beta,u=mainnet-beta_write,p=password"
+    EXPECTED_GENESIS_HASH="5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d"
+    ;;
+  "testnet")
+    ENTRY_POINTS=" --entrypoint entrypoint.testnet.solana.com:8001 --entrypoint entrypoint2.testnet.solana.com:8001 --entrypoint entrypoint3.testnet.solana.com:8001"
+    KNOWN_VALIDATORS=" --known-validator 5D1fNXzvv5NjV1ysLjirC4WY92RNsVH18vjmcszZd8on --known-validator dDzy5SR3AXdYWVqbDEkVFdvSPCtS9ihF5kJkHCtXoFs --known-validator Ft5fbkqNa76vnsjYNwjDZUXoTWpP7VYm3mtsaQckQADN --known-validator eoKpUABi59aT4rR9HGS3LcMecfut9x7zJyodWWP43YQ --known-validator 9QxCLckBiJc783jnMvXZubK4wH86Eqqvashtrwvcsgkv"
+    SOLANA_METRICS_CONFIG="host=https://metrics.solana.com:8086,db=tds,u=testnet_write,p=c4fa841aa918bf8274e3e2a44d77568d9861b3ea"
+    EXPECTED_GENESIS_HASH="4uhcVJyU9pJkvQyS88uRDiswHXSCkY3zQawwpjk2NsNY"
+    ;;
+  "devnet")
+    ENTRY_POINTS=" --entrypoint entrypoint.devnet.solana.com:8001 --entrypoint entrypoint2.devnet.solana.com:8001 --entrypoint entrypoint3.devnet.solana.com:8001 --entrypoint entrypoint4.devnet.solana.com:8001 --entrypoint entrypoint5.devnet.solana.com:8001"
+    KNOWN_VALIDATORS=" --known-validator dv1ZAGvdsz5hHLwWXsVnM94hWf1pjbKVau1QVkaMJ92 --known-validator dv2eQHeP4RFrJZ6UeiZWoc3XTtmtZCUKxxCApCDcRNV --known-validator dv4ACNkpYPcE3aKmYDqZm9G5EB3J4MRoeE7WNDRBVJB --known-validator dv3qDFk1DTF36Z62bNvrCXe9sKATA6xvVy6A798xxAS"
+    SOLANA_METRICS_CONFIG="host=https://metrics.solana.com:8086,db=devnet,u=scratch_writer,p=topsecret"
+    EXPECTED_GENESIS_HASH="EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG"
+    ;;
+  *)
+    echo "Solana cluster id is not valid: $SOLANA_CLUSTER_ID"
+    exit 1
+    ;;
+esac
 
 echo "Install and configure CloudWatch agent"
 wget -q https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
 sudo dpkg -i -E amazon-cloudwatch-agent.deb
 
-sudo wget -q https://raw.githubusercontent.com/frbrkoala/solana-configs-for-aws/main/src/configs/cloudwatch-agent-config.json
+sudo wget -q $GIT_URL/src/configs/cloudwatch-agent-config.json
 sudo cp ./cloudwatch-agent-config.json /opt/aws/amazon-cloudwatch-agent/etc/custom-amazon-cloudwatch-agent.json
 
 sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
@@ -75,7 +102,7 @@ if [[ "$DATA_DISC_TYPE" == "instancestore" ]]; then
   echo "Data volume type is instance store"
 
   cd /opt
-  sudo wget https://raw.githubusercontent.com/frbrkoala/solana-configs-for-aws/main/src/scripts/setup-instance-store-volumes.sh
+  sudo wget $GIT_URL/src/scripts/setup-instance-store-volumes.sh
 
   sudo chmod +x /opt/setup-instance-store-volumes.sh
 
@@ -105,7 +132,7 @@ if [[ "$ACCOUNTS_DISC_TYPE" == "instancestore" ]]; then
 
   if [[ "$DATA_DISC_TYPE" != "instancestore" ]]; then
     cd /opt
-    sudo wget https://raw.githubusercontent.com/frbrkoala/solana-configs-for-aws/main/src/scripts/setup-instance-store-volumes.sh
+    sudo wget $GIT_URL/src/scripts/setup-instance-store-volumes.sh
 
     sudo chmod +x /opt/setup-instance-store-volumes.sh
 
@@ -210,142 +237,25 @@ if [[ "$SOLANA_NODE_TYPE" == "validator" ]]; then
         sudo mv ~/vote-account-keypair.json /home/solana/config/vote-account-keypair.json
     fi
 
-sudo bash -c 'cat > validator.sh <<EOF
-#!/bin/bash
-set -o errexit
-set -o nounset
-set -o pipefail
-# Remove empty snapshots
-find "/var/solana/data/ledger" -name "snapshot-*" -size 0 -print -exec rm {} \; || true
-export RUST_LOG=warning
-export RUST_BACKTRACE=full
-/home/solana/bin/solana-validator \
---ledger /var/solana/data/ledger \
---identity /home/solana/config/validator-keypair.json \
---vote-account /home/solana/config/vote-account-keypair.json \
---known-validator 7Np41oeYqPefeNQEHSv1UDhYrehxin3NStELsSKCT4K2 \
---known-validator GdnSyH3YtwcxFvQrVVJMm1JhTS4QVX7MFsX56uJLUfiZ \
---known-validator DE1bawNcRJB9rVm3buyMVfr8mBEoyyu73NBovf2oXJsJ \
---known-validator CakcnaRDHka2gXyfbEd2d3xsvkJkqsLw2akB3zsN1D2S \
---expected-genesis-hash 5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d \
---entrypoint entrypoint.mainnet-beta.solana.com:8001 \
---entrypoint entrypoint2.mainnet-beta.solana.com:8001 \
---entrypoint entrypoint3.mainnet-beta.solana.com:8001 \
---entrypoint entrypoint4.mainnet-beta.solana.com:8001 \
---entrypoint entrypoint5.mainnet-beta.solana.com:8001 \
---rpc-port 8899 \
---no-port-check \
---wal-recovery-mode skip_any_corrupted_record \
---init-complete-file /var/solana/data/init-completed \
---limit-ledger-size 50000000 \
---accounts /var/solana/accounts \
---no-os-cpu-stats-reporting \
---no-os-memory-stats-reporting \
---no-os-network-stats-reporting \
---log -
-EOF'
+sudo wget -q $GIT_URL/src/configs/node-validator-template.sh
+mv ./node-validator-template.sh /home/solana/bin/validator.sh
 fi
 
 if [[ "$SOLANA_NODE_TYPE" == "lightrpc" ]]; then
-sudo bash -c 'cat > validator.sh <<EOF
-#!/bin/bash
-set -o errexit
-set -o nounset
-set -o pipefail
-# Remove empty snapshots
-find "/var/solana/data/ledger" -name "snapshot-*" -size 0 -print -exec rm {} \; || true
-export RUST_LOG=warning
-export RUST_BACKTRACE=full
-/home/solana/bin/solana-validator \
---ledger /var/solana/data/ledger \
---identity /home/solana/config/validator-keypair.json \
---known-validator 7Np41oeYqPefeNQEHSv1UDhYrehxin3NStELsSKCT4K2 \
---known-validator GdnSyH3YtwcxFvQrVVJMm1JhTS4QVX7MFsX56uJLUfiZ \
---known-validator DE1bawNcRJB9rVm3buyMVfr8mBEoyyu73NBovf2oXJsJ \
---known-validator CakcnaRDHka2gXyfbEd2d3xsvkJkqsLw2akB3zsN1D2S \
---expected-genesis-hash 5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d \
---entrypoint entrypoint.mainnet-beta.solana.com:8001 \
---entrypoint entrypoint2.mainnet-beta.solana.com:8001 \
---entrypoint entrypoint3.mainnet-beta.solana.com:8001 \
---entrypoint entrypoint4.mainnet-beta.solana.com:8001 \
---entrypoint entrypoint5.mainnet-beta.solana.com:8001 \
---no-voting \
---snapshot-interval-slots 500 \
---maximum-local-snapshot-age 500 \
---full-rpc-api \
---rpc-port 8899 \
---gossip-port 8801 \
---dynamic-port-range 8800-8813 \
---no-port-check \
---wal-recovery-mode skip_any_corrupted_record \
---enable-rpc-transaction-history \
---enable-cpi-and-log-storage \
---init-complete-file /var/solana/data/init-completed \
---snapshot-compression none \
---require-tower \
---no-wait-for-vote-to-start-leader \
---limit-ledger-size 50000000 \
---accounts /var/solana/accounts \
---no-os-cpu-stats-reporting \
---no-os-memory-stats-reporting \
---no-os-network-stats-reporting \
---log -
-EOF'
+  sudo wget -q $GIT_URL/src/configs/node-light-rpc-template.sh
+  mv ./node-light-rpc-template.sh /home/solana/bin/validator.sh
 fi
 
 if [[ "$SOLANA_NODE_TYPE" == "heavyrpc" ]]; then
-sudo bash -c 'cat > validator.sh <<EOF
-#!/bin/bash
-set -o errexit
-set -o nounset
-set -o pipefail
-# Remove empty snapshots
-find "/var/solana/data/ledger" -name "snapshot-*" -size 0 -print -exec rm {} \; || true
-export RUST_LOG=warning
-export RUST_BACKTRACE=full
-/home/solana/bin/solana-validator \
---ledger /var/solana/data/ledger \
---identity /home/solana/config/validator-keypair.json \
---known-validator 7Np41oeYqPefeNQEHSv1UDhYrehxin3NStELsSKCT4K2 \
---known-validator GdnSyH3YtwcxFvQrVVJMm1JhTS4QVX7MFsX56uJLUfiZ \
---known-validator DE1bawNcRJB9rVm3buyMVfr8mBEoyyu73NBovf2oXJsJ \
---known-validator CakcnaRDHka2gXyfbEd2d3xsvkJkqsLw2akB3zsN1D2S \
---expected-genesis-hash 5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d \
---entrypoint entrypoint.mainnet-beta.solana.com:8001 \
---entrypoint entrypoint2.mainnet-beta.solana.com:8001 \
---entrypoint entrypoint3.mainnet-beta.solana.com:8001 \
---entrypoint entrypoint4.mainnet-beta.solana.com:8001 \
---entrypoint entrypoint5.mainnet-beta.solana.com:8001 \
---no-voting \
---snapshot-interval-slots 500 \
---maximum-local-snapshot-age 500 \
---full-rpc-api \
---rpc-port 8899 \
---gossip-port 8801 \
---dynamic-port-range 8800-8813 \
---no-port-check \
---wal-recovery-mode skip_any_corrupted_record \
---enable-rpc-transaction-history \
---enable-cpi-and-log-storage \
---init-complete-file /var/solana/data/init-completed \
---snapshot-compression none \
---require-tower \
---no-wait-for-vote-to-start-leader \
---limit-ledger-size 50000000 \
---accounts /var/solana/accounts \
---no-os-cpu-stats-reporting \
---no-os-memory-stats-reporting \
---no-os-network-stats-reporting \
---account-index spl-token-owner \
---account-index program-id \
---account-index spl-token-mint \
---account-index-exclude-key kinXdEcpDQeHPEuQnqmUgtYykqKGVFq6CeVX5iAHJq6 \
---account-index-exclude-key TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA \
---log -
-EOF'
+  sudo wget -q $GIT_URL/src/configs/node-heavy-rpc-template.sh
+  mv ./node-heavy-rpc-template.sh /home/solana/bin/validator.sh
 fi
 
-sudo chmod +x validator.sh
+sed -i "s/__SOLANA_METRICS_CONFIG__/$SOLANA_METRICS_CONFIG/g" /home/solana/bin/validator.sh
+sed -i "s/__EXPECTED_GENESIS_HASH__/$EXPECTED_GENESIS_HASH/g" /home/solana/bin/validator.sh
+sed -i "s/__KNOWN_VALIDATORS__/$KNOWN_VALIDATORS/g" /home/solana/bin/validator.sh
+sed -i "s/__ENTRY_POINTS__/$ENTRY_POINTS/g" /home/solana/bin/validator.sh
+sudo chmod +x /home/solana/bin/validator.sh
 
 echo "Making sure the solana user has access to everything needed"
 sudo chown -R solana:solana /var/solana
@@ -391,7 +301,7 @@ sudo systemctl restart logrotate.service
 
 echo "Configuring syncchecker script"
 cd /opt
-sudo wget https://raw.githubusercontent.com/frbrkoala/solana-configs-for-aws/main/src/scripts/syncchecker-solana.sh
+sudo wget $GIT_URL/src/scripts/syncchecker-solana.sh
 sudo mv /opt/syncchecker-solana.sh /opt/syncchecker.sh
 sudo chmod +x /opt/syncchecker.sh
 

@@ -35,7 +35,7 @@ Parameters:
   SolanaVersion:
     Description: "The version of Solana to deploy. Select from here: https://github.com/solana-labs/solana/releases ."
     Type: String
-    Default: "1.14.17"
+    Default: "1.14.20"
   SolanaNodeType:
     Description: "Choose Solana Node Type (validator, lightrpc, heavyrpc). For heavyrpc node type make sure you choose instances with at least 1TB of RAM."
     Type: String
@@ -56,10 +56,17 @@ Parameters:
     Description: "Optional for validator node type. The ARN of the secret in AWS Secrets Manager with the Authorized Withdrawer Account's key pair."
     Type: String
     Default: "none"
-  RegistrationTransactionFudingAccountSecretARN:
+  RegistrationTransactionFundingAccountSecretARN:
     Description: "Required for validator node type. The ARN of the secret in AWS Secrets Manager with Registration Transaction Funding Account's key pair. Needs to have sufficient SOL to pay for on-chain validator creation transaction. If not present, the node provisioning script assumes the on-chain validator creation transaction was issued elsewhere and will skip it."
     Type: String
     Default: "none"
+  SolanaCluster:
+    Description: "The Solana cluster to connect to."
+    Type: String
+    AllowedValues:
+      - "mainnet-beta"
+      - "testnet"
+      - "devnet"
 Conditions:
   AddDataDiscGP3: !Equals [!Ref DataDiscType, "gp3"]
   AddAccountsDiscGP3: !Equals [!Ref AccountsDiscType, "gp3"]
@@ -91,6 +98,7 @@ Resources:
             sudo bash -c 'echo "VOTE_ACCOUNT_SECRET_ARN=${VOTE_ACCOUNT_SECRET_ARN}" >> /etc/environment'
             sudo bash -c 'echo "AUTHORIZED_WITHDRAWER_ACCOUNT_SECRET_ARN=${AUTHORIZED_WITHDRAWER_ACCOUNT_SECRET_ARN}" >> /etc/environment'
             sudo bash -c 'echo "REGISTRATION_TRANSACTION_FUNDING_ACCOUNT_SECRET_ARN=${REGISTRATION_TRANSACTION_FUNDING_ACCOUNT_SECRET_ARN}" >> /etc/environment'
+            sudo bash -c 'echo "SOLANA_CLUSTER_ID=${SOLANA_CLUSTER_ID}" >> /etc/environment'
             sudo source /etc/environment
 
             sudo apt-get -yqq update
@@ -110,7 +118,8 @@ Resources:
             NODE_IDENTITY_SECRET_ARN: !Ref SolanaNodeIdentitySecretARN
             VOTE_ACCOUNT_SECRET_ARN: !Ref VoteAccountSecretARN
             AUTHORIZED_WITHDRAWER_ACCOUNT_SECRET_ARN: !Ref AuthorizedWithdrawerAccountSecretARN
-            REGISTRATION_TRANSACTION_FUNDING_ACCOUNT_SECRET_ARN: !Ref RegistrationTransactionFudingAccountSecretARN
+            REGISTRATION_TRANSACTION_FUNDING_ACCOUNT_SECRET_ARN: !Ref RegistrationTransactionFundingAccountSecretARN
+            SOLANA_CLUSTER_ID: !Ref SolanaCluster
       BlockDeviceMappings:
       - DeviceName: /dev/sda1
         Ebs:
