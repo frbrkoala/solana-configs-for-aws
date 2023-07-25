@@ -9,9 +9,11 @@ Parameters:
     Type: String
     Default: r6a.8xlarge
   Ec2AmiId:
-    Type: AWS::EC2::Image::Id
-    Default: 'ami-0568936c8d2b91c4e' # Ubuntu, 20.04 LTS, amd64 focal image build on 2023-02-07
-    Description: "In other regions, search for Ubuntu, 20.04 LTS, amd64 focal image build on 2023-02-07"
+    #Type: AWS::EC2::Image::Id
+    #Default: 'ami-0568936c8d2b91c4e' # Ubuntu, 20.04 LTS, amd64 focal image build on 2023-02-07
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: "/aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id"
+    Description: "Use Ubuntu 20.04 LTS image for amd64 or arm64. Find more: https://discourse.ubuntu.com/t/finding-ubuntu-images-with-the-aws-ssm-parameter-store/15507"
   DataDiscType:
     Description: "Set EBS type for to store state data (gp3, io2) or set to (none) for instnace store instances like i4i."
     Type: String
