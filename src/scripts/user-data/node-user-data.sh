@@ -251,7 +251,7 @@ if [[ "$SOLANA_NODE_TYPE" == "heavyrpc" ]]; then
   mv ./node-heavy-rpc-template.sh /home/solana/bin/validator.sh
 fi
 
-sed -i "s/__SOLANA_METRICS_CONFIG__/$SOLANA_METRICS_CONFIG/g" /home/solana/bin/validator.sh
+sed -i "s;__SOLANA_METRICS_CONFIG__;\"$SOLANA_METRICS_CONFIG\";g" /home/solana/bin/validator.sh
 sed -i "s/__EXPECTED_GENESIS_HASH__/$EXPECTED_GENESIS_HASH/g" /home/solana/bin/validator.sh
 sed -i "s/__KNOWN_VALIDATORS__/$KNOWN_VALIDATORS/g" /home/solana/bin/validator.sh
 sed -i "s/__ENTRY_POINTS__/$ENTRY_POINTS/g" /home/solana/bin/validator.sh
