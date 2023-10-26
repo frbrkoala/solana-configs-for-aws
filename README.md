@@ -1,3 +1,5 @@
+# DEPRECATED Please refer to [AWS Blockchain Node Runner for Solana](https://github.com/aws-samples/aws-blockchain-node-runners/tree/main/lib/solana)
+
 # Recommended configurations for running Solana nodes on AWS
 
 | Usage pattern  | Ideal configuration  | Primary option on AWS  | Data Transfer Estimates | Run on AWS |
